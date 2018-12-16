@@ -1,90 +1,43 @@
 let fs = require('fs');
+const exampleInput = fs.readFileSync('./inputs/16a.txt').toString().split('\n').map(e => e.trim());
 
-let testProgram = fs.readFileSync('./inputs/16b.txt').toString().split('\n')
+const testProgram = fs.readFileSync('./inputs/16b.txt').toString().split('\n')
     .map(e => e.trim().split(' ').map(x => Number(x)));
-let input = fs.readFileSync('./inputs/16a.txt').toString().split('\n').map(e => e.trim());
 
 let examples = [];
 
-for (let i = 0; i < input.length; i += 4) {
+for (let i = 0; i < exampleInput.length; i += 4) {
     examples.push({
-        before: JSON.parse(input[i].split(': ')[1]),
-        after: JSON.parse(input[i + 2].split(': ')[1]),
-        oper: input[i + 1].split(' ').map(e => Number(e))
+        before: JSON.parse(exampleInput[i].split(': ')[1]),
+        after: JSON.parse(exampleInput[i + 2].split(': ')[1]),
+        oper: exampleInput[i + 1].split(' ').map(e => Number(e))
     })
 }
 
-const addr = (a, b, c, reg) => {
-    reg[c] = reg[a] + reg[b];
+const operationSet = {
+    addr: (a, b, c, reg) => { reg[c] = reg[a] + reg[b]; },
+    addi: (a, b, c, reg) => { reg[c] = reg[a] + b; },
+    mulr: (a, b, c, reg) => { reg[c] = reg[a] * reg[b]; },
+    muli: (a, b, c, reg) => { reg[c] = reg[a] * b; },
+    banr: (a, b, c, reg) => { reg[c] = reg[a] & reg[b]; },
+    bani: (a, b, c, reg) => { reg[c] = reg[a] & b; },
+    borr: (a, b, c, reg) => { reg[c] = reg[a] | reg[b]; },
+    bori: (a, b, c, reg) => { reg[c] = reg[a] | b; },
+    setr: (a, b, c, reg) => { reg[c] = reg[a]; },
+    seti: (a, b, c, reg) => { reg[c] = a; },
+    gtri: (a, b, c, reg) => { reg[c] = reg[a] > b ? 1 : 0; },
+    gtir: (a, b, c, reg) => { reg[c] = a > reg[b] ? 1 : 0; },
+    gtrr: (a, b, c, reg) => { reg[c] = reg[a] > reg[b] ? 1 : 0; },
+    eqir: (a, b, c, reg) => { reg[c] = a == reg[b] ? 1 : 0; },
+    eqri: (a, b, c, reg) => { reg[c] = b == reg[a] ? 1 : 0; },
+    eqrr: (a, b, c, reg) => { reg[c] = reg[a] == reg[b] ? 1 : 0; }
 }
 
-const addi = (a, b, c, reg) => {
-    reg[c] = reg[a] + b;
-}
-
-const mulr = (a, b, c, reg) => {
-    reg[c] = reg[a] * reg[b];
-}
-
-const muli = (a, b, c, reg) => {
-    reg[c] = reg[a] * b;
-}
-
-const banr = (a, b, c, reg) => {
-    reg[c] = reg[a] & reg[b];
-}
-
-const bani = (a, b, c, reg) => {
-    reg[c] = reg[a] & b;
-}
-
-const borr = (a, b, c, reg) => {
-    reg[c] = reg[a] | reg[b];
-}
-
-const bori = (a, b, c, reg) => {
-    reg[c] = reg[a] | b;
-}
-
-const setr = (a, b, c, reg) => {
-    reg[c] = reg[a];
-}
-
-const seti = (a, b, c, reg) => {
-    reg[c] = a;
-}
-
-const gtri = (a, b, c, reg) => {
-    reg[c] = reg[a] > b ? 1 : 0;
-}
-
-const gtir = (a, b, c, reg) => {
-    reg[c] = a > reg[b] ? 1 : 0;
-}
-
-const gtrr = (a, b, c, reg) => {
-    reg[c] = reg[a] > reg[b] ? 1 : 0;
-}
-
-const eqir = (a, b, c, reg) => {
-    reg[c] = a == reg[b] ? 1 : 0;
-}
-
-const eqri = (a, b, c, reg) => {
-    reg[c] = b == reg[a] ? 1 : 0;
-}
-
-const eqrr = (a, b, c, reg) => {
-    reg[c] = reg[a] == reg[b] ? 1 : 0;
-}
-
-let operations = [
-    addr, addi, mulr, muli, banr, bani, borr, bori, setr, seti, gtri, gtir, gtrr, eqir, eqri, eqrr
-]
+const operations = Object.keys(operationSet).map(e => operationSet[e]);
 
 const operationsToOpCodes = operations.map(e => ({
     op: e,
-    matchingOpCodes: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    matchingOpCodes: Array.from({ length: 16 }, (_, k) => k)
 }))
 
 const evaluateExample = (example) => {
@@ -121,11 +74,6 @@ for (let e of examples) {
     evaluateExample(e);
 }
 
-let cnt = 0;
-for (let e of examples) {
-    if (e.count >= 3) cnt++;
-}
-
 // If there is a instruction with only single op code, remove it from all others
 // and keep doing it until there is nothing to remove
 let removing = false;
@@ -152,5 +100,5 @@ for (let line of testProgram) {
     opToOpCodes.op(line[1], line[2], line[3], regs)
 }
 
-console.log(`The number of examples with 3 or more op codes is: ${cnt}`);
+console.log(`The number of examples with 3 or more op codes is: ${examples.filter(e => e.count >= 3).length}`);
 console.log(`After running the example program you get: ${regs.join(' ')}`);
