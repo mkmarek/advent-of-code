@@ -41,7 +41,7 @@ const getBounds = () => {
         }
     }
 
-    return [minX-1, minY, maxX, maxY];
+    return [minX-1, minY, maxX+1, maxY];
 }
 
 const getCnt = () => {
@@ -59,22 +59,18 @@ const getCnt = () => {
 }
 
 const print = () => {
-    const [minX, minY, maxX, maxY] = getBounds();
+    const [minX, _, maxX, maxY] = getBounds();
+
     let str = '';
-    let cnt = 0;
     for (let y = 0; y <= maxY; y++) {
         for (let x = minX; x <= maxX; x++) {
-            if (map[x] && map[x][y] == 'w') cnt++;
             if (map[x] && map[x][y]) str += map[x][y]
-            else if (waterSource.x == x && waterSource.y == y) str +='X'
-            else if (water.filter(e => e.y == y && e.x == x).length > 0) str +='|'
             else str +='.';
         }
         str+='\n';
     }
 
     console.log(str);
-    fs.writeFileSync('test.txt', str);
 }
 
 for (let el of input) {
@@ -97,16 +93,7 @@ for (let el of input) {
     }
 }
 
-const isBlocked = (x, y) => {
-    let inMap = map[x] && (map[x][y] == 'c' || map[x][y] == 'w')
-
-    return inMap;
-}
-
-let water = [];
-let i = 0;
-print();
-let prevCnt = 0;
+const isBlocked = (x, y) => map[x] && (map[x][y] == 'c' || map[x][y] == 'w')
 
 const occupiesRow = (x, y) => {
     let start = 0;
@@ -124,11 +111,11 @@ const occupiesRow = (x, y) => {
 
 let lastCnt1 = 0;
 let lastCnt2 = 0;
-let yyy = 0;
-while (true) {
-    const [minX, minY, maxX, maxY] = getBounds();
-    map[waterSource.x][waterSource.y + 1] = '|';
+map[waterSource.x][waterSource.y + 1] = '|';
 
+const [minX, _, maxX, maxY] = getBounds();
+
+while (true) {
     for (let x = minX; x <= maxX; x++) {
         for (let y = 0; y <= maxY; y++) {
             if (!map[x]) map[x] = [];
@@ -137,16 +124,14 @@ while (true) {
 
             if (map[x] && map[x][y] == '|') {
                 if (y == maxY) {
-                    let [cnt1, cnt2] = getCnt();
-                    if (cnt1 == lastCnt1 && cnt2 == lastCnt2) {
-                        print();
-                        console.log(getBounds())
-                        console.log(getCnt());
+                    let [still, flowing] = getCnt();
+                    if (still == lastCnt1 && flowing == lastCnt2) {
+                        console.log(`Answer1: ${still + flowing}`);
+                        console.log(`Answer2: ${still}`);
                         return;
                     }
-                    console.log(cnt1 + cnt2);
-                    lastCnt1 = cnt1;
-                    lastCnt2 = cnt2;
+                    lastCnt1 = still;
+                    lastCnt2 = flowing;
                 }
 
                 if (!isBlocked(x, y+1)) {
