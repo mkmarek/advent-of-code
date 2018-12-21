@@ -1,7 +1,7 @@
 let fs = require('fs');
 let input = fs.readFileSync('./inputs/21.txt').toString().split('\n').map(e => e.trim());
 
-const instructionReg = 4;
+const instructionReg = 5;
 
 const operationSet = {
     addr: (a, b, c, reg) => { reg[c] = reg[a] + reg[b]; },
@@ -31,17 +31,25 @@ const instructions = input.map(e => ({
 }))
 
 
-//12446070
 let regs = [0, 0, 0, 0, 0, 0]
-let cntr = 0;
+let history = [];
 
-while (cntr++ < 50 && regs[instructionReg] >= 0 && regs[instructionReg] < input.length) {
-    let prev = [...regs];
+while (regs[instructionReg] >= 0 && regs[instructionReg] < input.length) {
     operationSet[instructions[regs[instructionReg]].instr](
         instructions[regs[instructionReg]].a, 
         instructions[regs[instructionReg]].b,
         instructions[regs[instructionReg]].c, regs);
 
-    console.log(`${prev[instructionReg]} - ${instructions[prev[instructionReg]].text}; ${prev} - ${regs}`);
+    if (regs[instructionReg] == 28) { if (!history.includes(regs[1])) {
+        if (history.length == 0) {
+            console.log(`Answer1: ${regs[1]}`);
+        }
+        history.push(regs[1]);
+    } else {
+        console.log(`Answer2: ${history[history.length - 1]}`);
+        return;
+    }
+}
+
     regs[instructionReg]++;
 }
