@@ -51,30 +51,12 @@ const getType = (x, y) => {
     }
 }
 
-const getErosionLevel = (x, y) => {
-    const index = (getGeoogicIndex(x, y) + depth) % 20183;
-
-    return index;
-}
+const getErosionLevel = (x, y) => (getGeoogicIndex(x, y) + depth) % 20183
 
 let danger = 0;
-let map = []
 for (let x = 0; x <= target.x; x++) {
-    if (!map[x]) {
-        map[x] = [];
-    }
     for (let y = 0; y <= target.y; y++) {
-        let type = getType(x, y);
-
-        if (type == 'rocky') {
-            map[x][y] = 'rocky';
-        } else if (type == 'wet') {
-            danger++;
-            map[x][y] = 'wet';
-        } else if (type == 'narrow') {
-            danger += 2;
-            map[x][y] = 'narrow';
-        }
+        danger += getErosionLevel(x, y) % 3;
     }
 }
 
@@ -92,12 +74,6 @@ const getToolsForRegion = (regionType) => {
     if (regionType == 'narrow') {
         return ['neither', 'torch']
     }
-}
-
-const cost = (start, end, endTool) => {
-    return start.tool == endTool
-        ? 1
-        : 8;
 }
 
 let nodes = {};
