@@ -9,7 +9,7 @@ function runProgram(instructions, a, b) {
     instructions[2] = b;
 
     for (let i = 0; i < instructions.length; i += 4) {
-        switch (instructions[i]) {
+       switch (instructions[i]) {
             case 1: instructions[instructions[i + 3]] = instructions[instructions[i + 1]] + instructions[instructions[i + 2]]; break;
             case 2: instructions[instructions[i + 3]] = instructions[instructions[i + 1]] * instructions[instructions[i + 2]]; break;
             case 99: return instructions[0];
@@ -29,3 +29,4 @@ for (let a = 0; a < 100; a++) {
         };
     }
 }
+
