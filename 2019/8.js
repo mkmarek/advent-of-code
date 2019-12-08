@@ -1,76 +1,29 @@
 const fs = require('fs');
+const { setArray } = require('./utils');
 
 const input = fs.readFileSync('8.txt').toString().split('')
     .map(e => Number(e.trim()));
 
-function getLayers(w, h) {
-    let layers = [];
-    let curr = 0;
+const getLayers = (w, h) => input.reduce((p, c, i) => setArray(p, [
+    Math.floor(i / (w * h)),
+    Math.floor(i % (w * h) / w),
+    i % (w * h) % w], c), []) 
 
-    while (curr < input.length) {
-        let image = [];
-        for (let y = 0; y < h; y++) {
-            let k = [];
-            for (let x = 0; x < w; x++) {
-                k.push(input[curr++])
-            }
-            image.push(k);
-        }
-        layers.push(image);
-    }
+const numberOfDigits = (layer, digit) =>
+    layer.reduce((p, n) => p + n.reduce((pl, nl) => pl + (nl === digit ? 1 : 0), 0), 0);
 
-    return layers;
-}
+const getResultForPart1 = (layers) => layers
+    .map((layer) => ({ layer, n : numberOfDigits(layer, 0)}))
+    .sort((a, b) => a.n - b.n)
+    .slice(0, 1)
+    .map(({layer}) => numberOfDigits(layer, 1) * numberOfDigits(layer, 2))[0];
 
-function numberOfDigits(layer, digit) {
-    let cnt = 0;
-
-    for (let y = 0; y < layer.length; y++) {
-        for (let x = 0; x < layer[y].length; x++) {
-            if (layer[y][x] === digit) {
-                cnt++;
-            }
-        }
-    }
-
-    return cnt;
-}
-
-function getResultForPart1(layers) {
-    let layerWithFewestZeroDigits = layers[0];
-    let digits = numberOfDigits(layerWithFewestZeroDigits, 0)
-
-    for (let j = 1; j < layers.length; j++) {
-        const temp = numberOfDigits(layers[j], 0)
-        
-        if (temp < digits) {
-            layerWithFewestZeroDigits = layers[j];
-            digits = temp;
-        }
-    }
-
-    return numberOfDigits(layerWithFewestZeroDigits, 1) * numberOfDigits(layerWithFewestZeroDigits, 2)
-}
-
-function getMessageForPart2(layers) {
-    let image = [];
-
-    for (let j = 0; j < layers.length; j++) {
-        for (let y = 0; y < layers[j].length; y++) {
-            if (!image[y]) image[y] = [];
-            for (let x = 0; x < layers[j][y].length; x++) {
-                if (image[y][x] == 2 || (!image[y][x] && image[y][x] !== 0))
-                    image[y][x] = layers[j][y][x] ;
-            }
-        }
-    }
-
-    return image.map(e => e.join('').replace(/0/g, ' ')).join('\n');
-}
+const getMessageForPart2 = (layers) => layers
+    .reduce((p, c) => c.map((row, y) => row.map((col, x) => [1, 0].includes((p[y] || [])[x]) ? p[y][x] : col)),[])
+    .map(el => el.map(e => e === 0 ? ' ' : '*').join(''))
+    .join('\n');
 
 const layers = getLayers(25, 6);
-
 console.log(`Part1: ${getResultForPart1(layers)}`);
 console.log('Part2:')
 console.log(getMessageForPart2(layers));
-
