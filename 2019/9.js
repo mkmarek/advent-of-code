@@ -21,7 +21,7 @@ function runProgram(instructions, input) {
         input = [...input, additionalInput];
         let output = 0;
         for (; i < instructions.length;) {
-            
+
             const str = instructions[i].toString().padStart(5, '0');
             const opCode = Number(str.substring(3, 5));
             const addressA = getAddress(1, str[2]);
@@ -43,6 +43,7 @@ function runProgram(instructions, input) {
                 case 7: if (instructions[addressA] < instructions[addressB]) instructions[addressC] = 1; else { instructions[addressC] = 0; } i += 4; break;
                 case 8: if (instructions[addressA] === instructions[addressB]) instructions[addressC] = 1; else instructions[addressC] = 0; i += 4; break;
                 case 99: return [true, output];
+                default: throw new Error(`Invalid opcode ${opCode}`);
             }
         }
     }
