@@ -16,8 +16,6 @@ let historyx = {};
 let historyy = {};
 let historyz = {};
 
-const matches = (a, b) => !(a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2])
-
 let hasM0, hasM1, hasM2
 
 function greatestCommonDivisor(x, y) {
@@ -48,26 +46,25 @@ for (let h = 0; ; h++) {
         input[i][2] += velocities[i][2]
     }
 
+    if (h === 999) console.log(`Part1: ${
+        input.map((e, i) => e.reduce((p, n) => p + Math.abs(n), 0) * velocities[i].reduce((p, n) => p + Math.abs(n), 0)).reduce((p, n) => p + n, 0)}`)
+
     const keyx = `${input.map(e => e[0]).join(',')}_${velocities.map(e => e[0]).join(',')}`;
     const keyy = `${input.map(e => e[1]).join(',')}_${velocities.map(e => e[1]).join(',')}`;
     const keyz = `${input.map(e => e[2]).join(',')}_${velocities.map(e => e[2]).join(',')}`
 
     if (historyx[keyx] && !hasM0) {
         hasM0 = h;
-        console.log('matchx ' + h);
     }
     if (historyy[keyy] && !hasM1) {
-        console.log('matchy ' + h);
         hasM1 = h;
     }
     if (historyz[keyz] && !hasM2) {
-        console.log('matchz ' + h);
         hasM2 = h;
     }
 
     if (hasM0 && hasM1 && hasM2) {
-        console.log(hasM0, hasM1, hasM2)
-        console.log(leastCommonMultiple(leastCommonMultiple(hasM0, hasM1), hasM2))
+        console.log(`Part2: ${leastCommonMultiple(leastCommonMultiple(hasM0, hasM1), hasM2)}`);
         return
     }
 
