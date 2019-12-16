@@ -1,38 +1,46 @@
 const fs = require('fs');
 
-let input = fs.readFileSync('16.txt').toString().trim().split('')
-    .map(e => Number(e.trim()));
+let input = fs.readFileSync('16.txt').toString().trim();
+let signal = input.split('').map(e => Number(e.trim()));
 
-const basePatter = [0, 1, 0, -1]
+const basePattern = [0, 1, 0, -1]
 
-let phase = 100;
+function run(multiplication) {
+    let arr = new Array(signal.length * multiplication)
+    for (let g = 0; g < signal.length * multiplication; g++) {
+        arr[g] = signal[g % signal.length];
+    }
 
-let arr = new Array(input.length * 10000)
-for (let g = 0; g < input.length * 10000;g++) {
-    arr[g] = input[g % input.length];
-}
-
-arr = input;
-
-for (let i = 0; i < phase; i++) {
-    let tmp = [];
-    console.log(`Phase ${i}`)
-    for (let d = 0; d < arr.length; d++) {
-        let digit = 0;
-
-        if (d % 10000 === 0) console.log(`${d}/${arr.length}`);
-
-        for (let bb = d; bb < arr.length; bb += (d + 1) * 4) {
-            for (let cc = bb + d + 1; cc <= bb + d * 2; cc += 1) {
-                digit += arr[cc];
-            }
-            for (let cc = bb + d * 3 + 1; cc <= bb + d * 4; cc += 1) {
-                digit -= arr[cc];
+    for (let i = 0; i < 100; i++) {
+        let tmp = [];
+        for (let d = arr.length - 1; d >= 0; d--) {
+            let sum = 0;
+            if (d > input.length / 2) {
+                sum += arr[d] + (tmp[d + 1] || 0);
+                tmp[d] = Math.abs(sum) % 10;
+            } else {
+                let basePatternOffset = 1;
+                for (let x = d; x < input.length;) {
+                    let num = basePattern[basePatternOffset++ % basePattern.length];
+                    if (num == 0) { x += d + 1; continue; }
+                    else if (num == 1) { 
+                        for (let h = 0; h <= d && x < input.length; h++) {
+                            sum += arr[x++] * num;
+                        }
+                    } else if (num == -1) { 
+                        for (let h = 0; h <= d && x < input.length; h++) {
+                            sum += arr[x++] * num;
+                        }
+                    }
+                }
+                tmp[d] = Math.abs(sum) % 10;
             }
         }
-        tmp.push(Math.abs(digit % 10));
+        arr = tmp;
     }
-    arr = tmp;
-    console.log(arr.join(''));
-    return;
+
+    return arr;
 }
+
+console.log(`Part1: ${run(1).slice(0, 8).join('')}`)
+console.log(`Part2: ${run(10000).slice(Number(input.slice(0, 7)), Number(input.slice(0, 7)) + 8).join('')}`)
