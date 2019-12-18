@@ -1,314 +1,123 @@
 const fs = require('fs');
-const { Graph, astar } = require('javascript-astar');
 
-const input = fs.readFileSync('18.txt').toString().split('\n')
+const inputFile = fs.readFileSync('18.txt').toString().split('\n')
     .map(e => e.trim().split(''));
 
-const makeArr = () => {
-    let doorPositions = {};
-    let lockPositions = {};
-    let startPosition = {};
-    let arr = [];
-    for (let y = 0; y < input.length; y++) {
-        if (!arr[y]) arr[y] = [];
-        for (let x = 0; x < input[y].length; x++) {
-            if (input[y][x] === '#') {
-                arr[y][x] = 0;
-            } else if (input[y][x].charCodeAt(0) >= 'A'.charCodeAt(0) &&
-                input[y][x].charCodeAt(0) <= 'Z'.charCodeAt(0)) {
-                arr[y][x] = 1;
-                doorPositions[input[y][x]] = { x, y }
-            } else {
-                arr[y][x] = 1;
-            }
+const deployRobots = (transform = (input, start) => input) => {
 
-            if (input[y][x].charCodeAt(0) >= 'a'.charCodeAt(0) &&
-                input[y][x].charCodeAt(0) <= 'z'.charCodeAt(0)) {
-                    lockPositions[input[y][x]] = { x, y }
-            }
-
-            if (input[y][x] === '@') {
-                startPosition = { x, y };
-            }
-
-        }
-    }
-
-    return { arr, doorPositions, lockPositions, startPosition }
-}
-
-
-const vvv = makeArr();
-const data = makeArr();
-
-let pathCache = {};
-
-const doPath = (perm) => {
-    let arr = JSON.parse(JSON.stringify(data.arr));
-    let pos = data.startPosition;
-    let steps = 0;
-    let tmp = '';
-    
-    let isFromCache = false;
-    for (let key of perm) {
-        tmp += key;
-        if (pathCache[tmp]) {
-            steps = pathCache[tmp].steps;
-            arr = pathCache[tmp].arr
-            pos = pathCache[tmp].pos;
-            isFromCache = true;
-            continue;
-        }
-
-        if (isFromCache) {
-            // console.log(tmp);
-            arr = JSON.parse(JSON.stringify(arr));
-            isFromCache = false;
-        }
-        
-        var graph = new Graph(arr);
-        var start = graph.grid[pos.y][pos.x];
-        var end = graph.grid[data.lockPositions[key].y][data.lockPositions[key].x];
-        var result = astar.search(graph, start, end, { heuristic: (a, b) => 1  });
-
-        if (!result.length)  {
-            steps = 0;
-            break;
-        };
-
-        pos = data.lockPositions[key];
-        steps += result.length;
-        if (data.doorPositions[key.toUpperCase()]) {
-            arr[data.doorPositions[key.toUpperCase()].y][data.doorPositions[key.toUpperCase()].x] = 1;
-        }
-
-        pathCache[tmp] = { steps, arr: JSON.parse(JSON.stringify(arr)), pos: {...pos} };
-    }
-
-    return [steps, tmp];
-}
-
-const banList = {};
-let totalSteps = [];
-let lastBest = 9999999999999999999999;
-// Taken from https://stackoverflow.com/a/20871714
-const permutator = (inputArr) => {
-    let result = [];
-
-    const permute = (arr, m = [], len) => {
-        if (arr.length === 0) {
-            
-            // console.log(m.join(''));
-            // totalSteps.push(len);
-            // console.log(len);
-            if (len < lastBest) {
-                lastBest = len;
-                console.log(lastBest);
-            }
-            
-        } else {
-
-            let paths = [];
-            for (let i = 0; i < arr.length; i++) {
-                let curr = arr.slice();
-                let next = curr.splice(i, 1);
-                let vv = m.concat(next);
-
-                let isOk = true;
-                let p = vv.join('');
-                for (let i = 0; i < p.length; i++) {
-                    let xx = p.substr(0, i);
-                    if (banList[xx]) {
-                        isOk = false;
-                        break;
-                    }
-                }
-
-                let [len, pth] = doPath(vv);
-                if (isOk && len > 0) {
-                    paths.push({ vv, len, curr: curr })
-                } else {
-                    banList[vv.join()] = true;
-                    banList[pth] = true;
+    const getStarts = (inp) => {
+        let starts = [];
+        for (let y = 0; y < inp.length; y++) {
+            for (let x = 0; x < inp[y].length; x++) {
+                if (inp[y][x] === '@') {
+                    starts.push({ x, y })
                 }
             }
-
-            paths = paths.sort((a, b) => a.len - b.len);
-            for (let p of paths) {
-                permute(p.curr, p.vv, p.len)
-            }
         }
+        return starts;
     }
 
-    permute(inputArr)
+    const input = transform(inputFile, getStarts(inputFile)[0]);
 
-    return result;
-}
+    const getNeighbours = (point) => [
+        { x: point.x + 1, y: point.y },
+        { x: point.x - 1, y: point.y },
+        { x: point.x, y: point.y + 1 },
+        { x: point.x, y: point.y - 1 },
+    ].filter(e => input[e.y][e.x] != '#');
 
+    const keyCache = {}
+    const getReachableKeys = (start, keys) => {
+        const open = [start];
+        const close = { [`${start.x}_${start.y}`]: 0 };
+        const foundKeys = {};
+        const cacheKey = `${start.x}_${start.y}/${keys.sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0)).join('')}`;
 
-const ditances = {};
+        if (keyCache[cacheKey]) return keyCache[cacheKey];
 
-console.log(data.doorPositions)
-for (let l1 of Object.keys(data.lockPositions)) {
-    for (let l2 of Object.keys(data.lockPositions)) {
-        if (l1 != l2) {
-            var graph = new Graph(data.arr);
-            var start = graph.grid[data.lockPositions[l1].y][data.lockPositions[l1].x];
-            var end = graph.grid[data.lockPositions[l2].y][data.lockPositions[l2].x];
-            var result = astar.search(graph, start, end, { heuristic: (a, b) => 1  });
+        while (open.length > 0) {
+            const point = open.shift();
 
-            if (result.length > 0) {
-                ditances[`${l1}_${l2}`] = {
-                    len: result.length,
-                    // path: result.map(e => `${e.x}_${e.y}`),
-                    keys: Object.keys(data.lockPositions)
-                        .filter(e => result
-                            .filter(v => v.x == data.lockPositions[e].y && v.y == data.lockPositions[e].x).length > 0)
-                        .map(e => e.toLowerCase())
-                        .filter(e => e != l1)
-                        .filter(e => e != l2),
-                    requires: Object.keys(data.doorPositions)
-                        .filter(e => result
-                            .filter(v => v.x == data.doorPositions[e].y && v.y == data.doorPositions[e].x).length > 0)
-                        .map(e => e.toLowerCase())
-                };
-            }
-        }
-    }
-}
+            for (let n of getNeighbours(point)) {
+                if (close[`${n.x}_${n.y}`]){
+                    continue;
+                }
 
-for (let key of Object.keys(data.lockPositions)) {
-    var graph = new Graph(data.arr);
-    var start = graph.grid[data.startPosition.y][data.startPosition.x];
-    var end = graph.grid[data.lockPositions[key].y][data.lockPositions[key].x];
-    var result = astar.search(graph, start, end, { heuristic: (a, b) => 1  });
+                close[`${n.x}_${n.y}`] = close[`${point.x}_${point.y}`] + 1;
 
-    if (result.length > 0) {
-        ditances[`start_${key}`] = {
-            len: result.length,
-            keys: Object.keys(data.lockPositions)
-                .filter(e => result
-                    .filter(v => v.x == data.lockPositions[e].y && v.y == data.lockPositions[e].x).length > 0)
-                .map(e => e.toLowerCase())
-                .filter(e => e != key),
-            requires: Object.keys(data.doorPositions)
-                .filter(e => result.filter(v => v.y == data.doorPositions[e].x && v.x == data.doorPositions[e].y).length)
-                .map(e => e.toLowerCase())
-        };
-    } else {
-        console.log(key);
-    }
-}
-let visited = 0;
-const permutator2 = (inputArr) => {
-    let result = [];
-
-    const permute = (arr, m = [], len = 0, collected = []) => {
-
-        if (arr.filter(e => collected.includes(e)).length > 0) return;
-
-        if (arr.length === 0) {
-            visited++;
-            if (visited % 1000000 == 0) {
-                console.log(visited);
-            }
-            if (len < lastBest) {
-                lastBest = len;
-                console.log(m.join(''), lastBest);
-            }
-            
-        } else if (arr.filter(e => !collected.includes(e)).length === 0) {
-            visited++;
-            if (visited % 1000000 == 0) {
-                console.log(visited);
-            }
-            if (len < lastBest) {
-                lastBest = len;
-                console.log(m.join(''), lastBest);
-            }
-            
-        }
-        
-        else {
-            let paths = [];
-            for (let i = 0; i < arr.length; i++) {
-                let curr = arr.slice();
-                let next = curr.splice(i, 1);
-
-                if (collected.includes(next)) continue;
-
-                let vv = m.concat(next);
-
-                if (vv.length === 1) {
-                    const pair = ditances[`start_${vv[0]}`]
-
-                    if (pair.requires.length == 0) {
-                        paths.push([curr, vv, len + pair.len, [...pair.keys]])
-                    }
-                } else {
-                    const pair = ditances[`${vv[vv.length-2]}_${vv[vv.length-1]}`]
-
-                    const notMatchingRequires = pair.requires.filter(
-                        e => !m.includes(e)
-                    );
-
-                    if (notMatchingRequires.length == 0) {
-                        let newCollected = [...collected];
-                        for (let k of pair.keys) {
-                            if (!collected.includes(k)) newCollected.push(k);
-                        }
-                        paths.push([curr, vv, len + pair.len, newCollected])
-                    }
-
+                if (input[n.y][n.x] >= 'A' && input[n.y][n.x] <= 'Z' && !keys.includes(input[n.y][n.x].toLowerCase())) {
+                    continue;
+                }
+                if (input[n.y][n.x] >= 'a' && input[n.y][n.x] <= 'z' && !keys.includes(input[n.y][n.x])) {
+                    foundKeys[input[n.y][n.x]] = [close[`${n.x}_${n.y}`], n];
+                }
+                else {
+                    open.push(n);
                 }
             }
+        }
 
-            for (let path of paths.sort((a, b) => a[2] - b[2])) {
-                permute(...path)
+        keyCache[cacheKey] = foundKeys;
+        return foundKeys;
+    }
 
-                if (len >= lastBest) return;
+    const getKeysForMultipleRobots = (positions, keys) => {
+        const result = [];
+
+        for (let pos of positions) {
+            result.push(getReachableKeys(pos, keys));
+        }
+
+        return result;
+    }
+
+    const cache = {}
+    const findPath = (positions, keys = []) => {
+        const keyString = keys.sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0)).join('');
+        const positionString = positions.map(e => `${e.x}_${e.y}`).join('|');
+        const key = `${positionString}/${keyString}`;
+
+        if (cache[key]) return cache[key];
+
+        const reachableKeys = getKeysForMultipleRobots(positions, keys);
+        if (reachableKeys.filter(e => Object.keys(e).length > 0).length == 0) {
+            return 0;
+        }
+
+        const possiblePaths = [];
+        for (let robotId = 0; robotId < reachableKeys.length; robotId++) {
+            const keyNames = Object.keys(reachableKeys[robotId]);
+            for (let i = 0; i < keyNames.length; i++) {
+                const [distance, position] = reachableKeys[robotId][keyNames[i]];
+                const newKeys = keys.join('').split('');
+                newKeys.push(keyNames[i]);
+                const nextPositions = [...positions];
+                nextPositions[robotId] = position;
+                possiblePaths.push(distance + findPath(nextPositions, newKeys));
             }
         }
+
+        const minDistance = possiblePaths.sort((a, b) => a - b)[0];
+        cache[key] = minDistance;
+
+        return minDistance;
     }
 
-    permute(inputArr)
-
-    return result;
+    return findPath(getStarts(input))
 }
 
-const calculateDistance = (path) => {
-    let record = ditances[`start_${path[0]}`];
+console.log(`Part1: ${deployRobots()}`);
+console.log(`Part2: ${deployRobots((input, start) => {
+    input[start.y][start.x] = '#';
+    input[start.y - 1][start.x] = '#';
+    input[start.y + 1][start.x] = '#';
+    input[start.y][start.x + 1] = '#';
+    input[start.y][start.x - 1] = '#';
 
-    if (record.requires.length > 0) return null;
+    input[start.y - 1][start.x - 1] = '@';
+    input[start.y + 1][start.x - 1] = '@';
+    input[start.y - 1][start.x + 1] = '@';
+    input[start.y + 1][start.x + 1] = '@';
 
-    let distance = record.len;
-    for (let i = 0; i < path.length - 1; i++) {
-        record = ditances[`${path[i]}_${path[i + 1]}`];
-        if (record.requires.filter(e => path.indexOf(e) > i).length > 0) {
-            return null;
-        }
-
-        distance += record.len;
-    }
-
-    return distance;
-}
-
-// const buildTree = (path = [], current = 'start') => {
-//     console.log(path.join(''));
-//     return Object.keys(ditances)
-//         .filter(e => e.startsWith(`${current}_`))
-//         .filter(e => ditances[e].requires.filter(e => path.includes(e).length === 0))
-//         .filter(e => !path.includes(e.split('_')[]))
-//         .map(e => ({
-//             key : e.split('_')[1],
-//             distance: ditances[e].len,
-//             children: buildTree([...path, current], e.split('_')[1])
-//         }))
-// }
-
-// console.log(buildTree());
-
-// console.log(Object.keys(data.lockPositions).length)
-console.log(ditances);
-permutator2(Object.keys(data.lockPositions))
+    return input;
+})}`);
