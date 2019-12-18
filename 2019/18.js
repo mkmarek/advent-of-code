@@ -37,6 +37,7 @@ const makeArr = () => {
     return { arr, doorPositions, lockPositions, startPosition }
 }
 
+
 const vvv = makeArr();
 const data = makeArr();
 
@@ -68,7 +69,7 @@ const doPath = (perm) => {
         var graph = new Graph(arr);
         var start = graph.grid[pos.y][pos.x];
         var end = graph.grid[data.lockPositions[key].y][data.lockPositions[key].x];
-        var result = astar.search(graph, start, end);
+        var result = astar.search(graph, start, end, { heuristic: (a, b) => 1  });
 
         if (!result.length)  {
             steps = 0;
@@ -154,12 +155,18 @@ for (let l1 of Object.keys(data.lockPositions)) {
             var graph = new Graph(data.arr);
             var start = graph.grid[data.lockPositions[l1].y][data.lockPositions[l1].x];
             var end = graph.grid[data.lockPositions[l2].y][data.lockPositions[l2].x];
-            var result = astar.search(graph, start, end);
+            var result = astar.search(graph, start, end, { heuristic: (a, b) => 1  });
 
             if (result.length > 0) {
                 ditances[`${l1}_${l2}`] = {
                     len: result.length,
-                    path: result.map(e => `${e.x}_${e.y}`),
+                    // path: result.map(e => `${e.x}_${e.y}`),
+                    keys: Object.keys(data.lockPositions)
+                        .filter(e => result
+                            .filter(v => v.x == data.lockPositions[e].y && v.y == data.lockPositions[e].x).length > 0)
+                        .map(e => e.toLowerCase())
+                        .filter(e => e != l1)
+                        .filter(e => e != l2),
                     requires: Object.keys(data.doorPositions)
                         .filter(e => result
                             .filter(v => v.x == data.doorPositions[e].y && v.y == data.doorPositions[e].x).length > 0)
@@ -174,11 +181,16 @@ for (let key of Object.keys(data.lockPositions)) {
     var graph = new Graph(data.arr);
     var start = graph.grid[data.startPosition.y][data.startPosition.x];
     var end = graph.grid[data.lockPositions[key].y][data.lockPositions[key].x];
-    var result = astar.search(graph, start, end);
+    var result = astar.search(graph, start, end, { heuristic: (a, b) => 1  });
 
     if (result.length > 0) {
         ditances[`start_${key}`] = {
             len: result.length,
+            keys: Object.keys(data.lockPositions)
+                .filter(e => result
+                    .filter(v => v.x == data.lockPositions[e].y && v.y == data.lockPositions[e].x).length > 0)
+                .map(e => e.toLowerCase())
+                .filter(e => e != key),
             requires: Object.keys(data.doorPositions)
                 .filter(e => result.filter(v => v.y == data.doorPositions[e].x && v.x == data.doorPositions[e].y).length)
                 .map(e => e.toLowerCase())
@@ -191,7 +203,10 @@ let visited = 0;
 const permutator2 = (inputArr) => {
     let result = [];
 
-    const permute = (arr, m = [], len = 0) => {
+    const permute = (arr, m = [], len = 0, collected = []) => {
+
+        if (arr.filter(e => collected.includes(e)).length > 0) return;
+
         if (arr.length === 0) {
             visited++;
             if (visited % 1000000 == 0) {
@@ -202,18 +217,33 @@ const permutator2 = (inputArr) => {
                 console.log(m.join(''), lastBest);
             }
             
-        } else {
+        } else if (arr.filter(e => !collected.includes(e)).length === 0) {
+            visited++;
+            if (visited % 1000000 == 0) {
+                console.log(visited);
+            }
+            if (len < lastBest) {
+                lastBest = len;
+                console.log(m.join(''), lastBest);
+            }
+            
+        }
+        
+        else {
             let paths = [];
             for (let i = 0; i < arr.length; i++) {
                 let curr = arr.slice();
                 let next = curr.splice(i, 1);
+
+                if (collected.includes(next)) continue;
+
                 let vv = m.concat(next);
 
                 if (vv.length === 1) {
                     const pair = ditances[`start_${vv[0]}`]
 
                     if (pair.requires.length == 0) {
-                        paths.push([curr, vv, len + pair.len])
+                        paths.push([curr, vv, len + pair.len, [...pair.keys]])
                     }
                 } else {
                     const pair = ditances[`${vv[vv.length-2]}_${vv[vv.length-1]}`]
@@ -223,14 +253,17 @@ const permutator2 = (inputArr) => {
                     );
 
                     if (notMatchingRequires.length == 0) {
-                        paths.push([curr, vv, len + pair.len])
+                        let newCollected = [...collected];
+                        for (let k of pair.keys) {
+                            if (!collected.includes(k)) newCollected.push(k);
+                        }
+                        paths.push([curr, vv, len + pair.len, newCollected])
                     }
 
                 }
             }
 
-            paths = paths.sort((a, b) => a[2] - b[2]);
-            for (let path of paths) {
+            for (let path of paths.sort((a, b) => a[2] - b[2])) {
                 permute(...path)
 
                 if (len >= lastBest) return;
@@ -242,5 +275,40 @@ const permutator2 = (inputArr) => {
 
     return result;
 }
+
+const calculateDistance = (path) => {
+    let record = ditances[`start_${path[0]}`];
+
+    if (record.requires.length > 0) return null;
+
+    let distance = record.len;
+    for (let i = 0; i < path.length - 1; i++) {
+        record = ditances[`${path[i]}_${path[i + 1]}`];
+        if (record.requires.filter(e => path.indexOf(e) > i).length > 0) {
+            return null;
+        }
+
+        distance += record.len;
+    }
+
+    return distance;
+}
+
+// const buildTree = (path = [], current = 'start') => {
+//     console.log(path.join(''));
+//     return Object.keys(ditances)
+//         .filter(e => e.startsWith(`${current}_`))
+//         .filter(e => ditances[e].requires.filter(e => path.includes(e).length === 0))
+//         .filter(e => !path.includes(e.split('_')[]))
+//         .map(e => ({
+//             key : e.split('_')[1],
+//             distance: ditances[e].len,
+//             children: buildTree([...path, current], e.split('_')[1])
+//         }))
+// }
+
+// console.log(buildTree());
+
 // console.log(Object.keys(data.lockPositions).length)
+console.log(ditances);
 permutator2(Object.keys(data.lockPositions))
