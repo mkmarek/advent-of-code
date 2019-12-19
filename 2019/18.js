@@ -89,11 +89,9 @@ const deployRobots = (transform = (input, start) => input) => {
             const keyNames = Object.keys(reachableKeys[robotId]);
             for (let i = 0; i < keyNames.length; i++) {
                 const [distance, position] = reachableKeys[robotId][keyNames[i]];
-                const newKeys = keys.join('').split('');
-                newKeys.push(keyNames[i]);
                 const nextPositions = [...positions];
                 nextPositions[robotId] = position;
-                possiblePaths.push(distance + findPath(nextPositions, newKeys));
+                possiblePaths.push(distance + findPath(nextPositions, [...keys, keyNames[i]]));
             }
         }
 
