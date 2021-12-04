@@ -13,14 +13,14 @@ function part1() {
     do {
         numbers.push(draws[i++]);
         for (let b = 0; b < boards; b++) {
-            if (checkBoard(b, numbers)) {
-                return calculateUnmatched(b, numbers) * numbers[numbers.length - 1];
+            if (isBingo(b, numbers)) {
+                return calculateScore(b, numbers);
             }
         }
     } while (true);
 }
 
-function calculateUnmatched(board, numbers) {
+function calculateScore(board, numbers) {
     let sum = 0;
     for (let x = 0; x < 5; x++) {
         for (let y = 0; y < 5; y++) {
@@ -29,10 +29,10 @@ function calculateUnmatched(board, numbers) {
             }
         }
     }
-    return sum
+    return sum * numbers[numbers.length - 1];
 }
 
-function checkBoard(i, numbers) {
+function isBingo(i, numbers) {
     for (let x = 0; x < 5; x++) {
         let contains = true;
         for (let y = 0; y < 5; y++) {
@@ -64,25 +64,23 @@ function checkBoard(i, numbers) {
 
 
 function part2() {
-    const boards = boardData.length / 5;
-    let boardsWin = [];
+    let boardsInGame = new Array(boardData.length / 5).fill(0).map((_, i) => i);
 
     let numbers = [];
     let i = 0;
 
     do {
         numbers.push(draws[i++]);
-        for (let b = 0; b < boards; b++) {
-            if (checkBoard(b, numbers)) {
-                if (boardsWin.includes(b)) {
-                    continue;
+        for (let x = 0; x < boardsInGame.length; x++) {
+            const b = boardsInGame[x];
+            if (isBingo(b, numbers)) {
+                boardsInGame.splice(x, 1);
+
+                if (boardsInGame.length === 0) {
+                    return calculateScore(b, numbers);
                 }
 
-                boardsWin.push(b);
-
-                if (boardsWin.length === boards) {
-                    return calculateUnmatched(b, numbers) * numbers[numbers.length - 1];
-                }
+                x--;
             }
         }
     } while (true);
