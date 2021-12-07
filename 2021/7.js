@@ -3,14 +3,14 @@ const fs = require('fs');
 const input = fs.readFileSync('7.txt').toString().split(',').map(Number);
 
 function part1() {
-    let minCost = 9999999999999999;
+    let minCost = null;
     for (let i = 0; i < input.length; i++) {
         let cost = 0;
         for (let y = 0; y < input.length; y++) {
             cost += Math.abs(input[y] - i);
         }
 
-        if (minCost > cost) {
+        if (minCost === null || minCost > cost) {
             minCost = cost;
         }
     }
@@ -19,18 +19,15 @@ function part1() {
 }
 
 function part2() {
-    let minCost = 9999999999999999;
+    let minCost = null;
     for (let i = 0; i < input.length; i++) {
         let cost = 0;
         for (let y = 0; y < input.length; y++) {
-            let c = Math.abs(input[y] - i);
-
-            for (var v = 0; v <= c; v++) {
-                cost += v;
-            }
+            const d = Math.abs(input[y] - i);
+            cost += (d / 2) * (d + 1)
         }
 
-        if (minCost > cost) {
+        if (minCost === null || minCost > cost) {
             minCost = cost;
         }
     }
