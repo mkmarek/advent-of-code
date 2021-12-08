@@ -3,24 +3,6 @@ const fs = require('fs');
 const input = fs.readFileSync('8.txt').toString().split('\n')
     .map(e => ({ left: e.split(' | ')[0].split(' '), right: e.split(' | ')[1].split(' ').map(x => x.trim()) }));
 
-//     0:      1:      2:      3:      4:
-//     aaaa    ....    aaaa    aaaa    ....
-//    b    c  .    c  .    c  .    c  b    c
-//    b    c  .    c  .    c  .    c  b    c
-//     ....    ....    dddd    dddd    dddd
-//    e    f  .    f  e    .  .    f  .    f
-//    e    f  .    f  e    .  .    f  .    f
-//     gggg    ....    gggg    gggg    ....
-
-//      5:      6:      7:      8:      9:
-//     aaaa    aaaa    aaaa    aaaa    aaaa
-//    b    .  b    .  .    c  b    c  b    c
-//    b    .  b    .  .    c  b    c  b    c
-//     dddd    dddd    ....    dddd    dddd
-//    .    f  e    f  .    f  e    f  .    f
-//    .    f  e    f  .    f  e    f  .    f
-//     gggg    gggg    ....    gggg    gggg
-
 const numbers = {
     0: '012456',
     1: '25',
@@ -36,14 +18,6 @@ const numbers = {
 
 function getDigit(digit, pattern) {
     const keys = Object.keys(numbers);
-
-    if (!pattern) {
-        for (let key of keys) {
-            if (numbers[key].length === digit.length) {
-                return [1, 4, 7, 8].includes(Number(key));
-            }
-        }
-    }
 
     for (let key of keys) {
         let value = numbers[key];
@@ -70,10 +44,8 @@ function getDigit(digit, pattern) {
     return null;
 }
 
-let findPermutations = (string) => {
-    if (!string || typeof string !== "string") {
-        return "Please enter a string"
-    } else if (string.length < 2) {
+function findPermutations (string) {
+    if (string.length < 2) {
         return string
     }
 
@@ -96,19 +68,25 @@ let findPermutations = (string) => {
 
 function part1() {
     let cnt = 0;
+    const keys = Object.keys(numbers);
+
     for (var i = 0; i < input.length; i++) {
         for (var y = 0; y < input[i].right.length; y++) {
-            if (getDigit(input[i].right[y])) {
-                cnt++;
+            for (let key of keys) {
+                if (numbers[key].length === input[i].right[y].length) {
+                    if ([1, 4, 7, 8].includes(Number(key))) {
+                        cnt++;
+                        break;
+                    }
+                }
             }
         }
     }
+
     return cnt;
 }
 
 function part2() {
-    let cnt = 0;
-
     const perm = findPermutations('abcdefg')
     let patterns = [];
 
