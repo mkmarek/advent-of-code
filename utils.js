@@ -85,6 +85,16 @@ function intersect(a, b) {
     return t;
 }
 
+function getNeighbors(pos, input) {
+    let neighbors = [
+        [- 1, 0],
+        [+ 1, 0],
+        [0, - 1],
+        [0, + 1]
+    ].map(e => ([e[0] + pos[0], e[1] + pos[1]]));
+
+    return neighbors.filter(e => e[0] >= 0 && e[0] < input.length && e[1] >= 0 && e[1] < input[e[0]].length)
+}
 
 module.exports = {
     sum,
@@ -94,5 +104,6 @@ module.exports = {
     leastCommonMultiple,
     findPermutations,
     distinct,
-    intersect
+    intersect,
+    getNeighbors
 };
