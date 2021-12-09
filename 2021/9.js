@@ -1,19 +1,18 @@
 const fs = require('fs');
-const { sum, getNeighbors } = require('../utils');
+const { sum, getNeighbors, iterateTwoDimArray } = require('../utils');
 
 const input = fs.readFileSync('9.txt').toString().split('\n')
     .filter(e => e).map(e => e.split('').map(e => e.trim()).filter(e => e).map(e => parseInt(e)));
 
 function getLowPoints() {
     let lowPoints = []
-    for (let i = 0; i < input.length; i++) {
-        let row = input[i];
-        for (let j = 0; j < row.length; j++) {
-            if (isLowestPoint(i, j)) {
-                lowPoints.push([i, j]);
-            }
+
+    iterateTwoDimArray(input, (_, i, j) => {
+        if (isLowestPoint(i, j)) {
+            lowPoints.push([i, j]);
         }
-    }
+    });
+    
     return lowPoints;
 }
 

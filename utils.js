@@ -32,7 +32,7 @@ function leastCommonMultiple(x, y) {
     return Math.floor(x / greatestCommonDivisor(x, y) * y)
 }
 
-function findPermutations (string) {
+function findPermutations(string) {
     if (string.length < 2) {
         return string
     }
@@ -96,6 +96,33 @@ function getNeighbors(pos, input) {
     return neighbors.filter(e => e[0] >= 0 && e[0] < input.length && e[1] >= 0 && e[1] < input[e[0]].length)
 }
 
+function getNeighborsDiagonal(pos, input) {
+    let neighbors = [
+        [-1, 0],
+        [+1, 0],
+        [0, -1],
+        [0, +1],
+        [-1, +1],
+        [+1, -1],
+        [-1, -1],
+        [+1, +1],
+    ].map(e => ([e[0] + pos[0], e[1] + pos[1]]));
+
+    return neighbors.filter(e => e[0] >= 0 && e[0] < input.length && e[1] >= 0 && e[1] < input[e[0]].length)
+}
+
+function iterateTwoDimArray(input, func) {
+    for (let i = 0; i < input.length; i++) {
+        for (let j = 0; j < input[i].length; j++) {
+            const result = func(input[i][j], i, j);
+            if (result !== undefined) {
+                return result;
+            }
+        }
+    }
+}
+
+
 module.exports = {
     sum,
     groupBy,
@@ -105,5 +132,7 @@ module.exports = {
     findPermutations,
     distinct,
     intersect,
-    getNeighbors
+    getNeighbors,
+    getNeighborsDiagonal,
+    iterateTwoDimArray
 };
