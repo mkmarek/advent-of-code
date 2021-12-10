@@ -7,8 +7,16 @@ function isOpen(char) {
     return char === '(' || char === '[' || char === '{' || char === '<'
 }
 
-function isClose(char) {
-    return char === ')' || char === ']' || char === '}' || char === '>'
+function getOpposite(char) {
+    if (char === '(') {
+        return ')'
+    } else if (char === '[') {
+        return ']'
+    } else if (char === '{') {
+        return '}'
+    } else if (char === '<') {
+        return '>'
+    }
 }
 
 function part1() {
@@ -17,88 +25,39 @@ function part1() {
         let expectedStack = []
         for (let y = 0; y < input[i].length; y++) {
             if (isOpen(input[i][y])) {
-                if (input[i][y] === '(') {
-                    expectedStack.push(')')
-                } else if (input[i][y] === '[') {
-                    expectedStack.push(']')
-                } else if (input[i][y] === '{') {
-                    expectedStack.push('}')
-                } else if (input[i][y] === '<') {
-                    expectedStack.push('>')
-                }
+                expectedStack.push(getOpposite(input[i][y]))
             } else {
-                let exp = expectedStack.pop()
-                if (exp !== input[i][y]) {
-                    invalid.push({ char: input[i][y], index: y })
+                if (expectedStack.pop() !== input[i][y]) {
+                    invalid.push(input[i][y])
                     break;
                 }
             }
         }
     }
 
-    let sum = 0;
-    for (let i = 0; i < invalid.length; i++) {
-        if (invalid[i].char === ')') {
-            sum += 3;
-        }
-        if (invalid[i].char === ']') {
-            sum += 57;
-        }
-        if (invalid[i].char === '}') {
-            sum += 1197;
-        }
-        if (invalid[i].char === '>') {
-            sum += 25137;
-        }
-    }
-    return sum;
+    return sum(invalid, c => ({ ')': 3, ']': 57, '}': 1197, '>': 25137 }[c]));
 }
 
 function part2() {
-    var valid = [];
-    let scores = [];
+    const scores = [];
 
     for (let i = 0; i < input.length; i++) {
-        let expectedStack = []
+        const expectedStack = []
         let isvalid = true;
         for (let y = 0; y < input[i].length; y++) {
             if (isOpen(input[i][y])) {
-                if (input[i][y] === '(') {
-                    expectedStack.push(')')
-                } else if (input[i][y] === '[') {
-                    expectedStack.push(']')
-                } else if (input[i][y] === '{') {
-                    expectedStack.push('}')
-                } else if (input[i][y] === '<') {
-                    expectedStack.push('>')
-                }
+                expectedStack.push(getOpposite(input[i][y]))
             } else if (expectedStack.length > 0) {
-                let exp = expectedStack.pop()
-                if (exp !== input[i][y]) {
+                if (expectedStack.pop() !== input[i][y]) {
                     isvalid = false;
                     break;
                 }
             }
         }
+
         if (isvalid) {
-            let score = 0;
             expectedStack.reverse()
-            for (let z = 0; z < expectedStack.length; z++) {
-                score = score * 5;
-                if (expectedStack[z] === ')') {
-                    score += 1;
-                }
-                if (expectedStack[z] === ']') {
-                    score += 2;
-                }
-                if (expectedStack[z] === '}') {
-                    score += 3;
-                }
-                if (expectedStack[z] === '>') {
-                    score += 4;
-                }
-            }
-            scores.push(score);
+            scores.push(expectedStack.reduce((acc, cur) => acc * 5 + ({ ')': 1, ']': 2, '}': 3, '>': 4 }[cur]), 0));
         }
     }
 
