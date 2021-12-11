@@ -122,6 +122,10 @@ function iterateTwoDimArray(input, func) {
     }
 }
 
+function deepCopy(obj) {
+    return JSON.parse(JSON.stringify(obj));
+}
+
 
 module.exports = {
     sum,
@@ -134,5 +138,6 @@ module.exports = {
     intersect,
     getNeighbors,
     getNeighborsDiagonal,
-    iterateTwoDimArray
+    iterateTwoDimArray,
+    deepCopy
 };

@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { getNeighborsDiagonal, iterateTwoDimArray } = require('../utils');
+const { getNeighborsDiagonal, iterateTwoDimArray, deepCopy } = require('../utils');
 
 const data = fs.readFileSync('11.txt').toString().split('\n').map(e => e.trim().split('').map(x => parseInt(x.trim())));
 
@@ -55,5 +55,5 @@ function part2(input) {
     }
 }
 
-console.log(`Part1: ${part1([...data.map(e => ([...e]))])}`)
-console.log(`Part2: ${part2([...data.map(e => ([...e]))])}`)
+console.log(`Part1: ${part1(deepCopy(data))}`)
+console.log(`Part2: ${part2(deepCopy(data))}`)
