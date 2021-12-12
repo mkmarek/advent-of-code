@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { sum, getNeighbors, iterateTwoDimArray, deepCopy, distinct, groupBy, intersect, toKeyValue, findPermutations } = require('../utils');
+const { deepCopy } = require('../utils');
 
 const data = fs.readFileSync('12.txt').toString().split('\n').map(line => line.trim().split('-'));
 
@@ -17,15 +17,15 @@ function makeGraph(input) {
 
 function part1(input) {
     const graph = makeGraph(input);
-    const paths = [];
     const queue = [['start']];
+    let pathCount = 0;
 
     while (queue.length) {
         const current = queue.pop();
         const lastSegment = current[current.length - 1];
 
         if (lastSegment === 'end') {
-            paths.push(current);
+            pathCount++;
             continue;
         }
 
@@ -36,13 +36,13 @@ function part1(input) {
         }
     }
 
-    return paths.length;
+    return pathCount;
 }
 
 function part2(input) {
     const graph = makeGraph(input);
-    let pathCount = 0;
     const queue = [{ path: ['start'], visitingCaveTwice: false }];
+    let pathCount = 0;
 
     while (queue.length) {
         const current = queue.pop();
@@ -57,11 +57,11 @@ function part2(input) {
         for (let n of nextRoutes) {
             if (n === 'start') continue;
             if (n === n.toLowerCase()) {
-                const alreadyVisited = !!current.path.find(e => e === n);
+                const alreadyVisited = !!current.path.includes(n);
                 if (alreadyVisited && current.visitingCaveTwice) continue;
                 queue.push({ path: [...current.path, n], visitingCaveTwice: current.visitingCaveTwice || alreadyVisited });
             } else {
-                queue.push({ path: [...current.path, n], visitingCaveTwice: current.visitingCaveTwice });
+                queue.push({ ...current, path: [...current.path, n] });
             }
         }
     }
