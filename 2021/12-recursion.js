@@ -1,47 +1,35 @@
 const fs = require('fs');
-const { deepCopy } = require('../utils');
+const { deepCopy, makeGraphBidirectional } = require('../utils');
 
 const data = fs.readFileSync('12.txt').toString().split('\n').map(line => line.trim().split('-'));
 
-function makeGraph(input) {
-    const graph = {};
-    for (const [from, to] of input) {
-        if (!graph[from]) graph[from] = [];
-        if (!graph[to]) graph[to] = [];
-
-        graph[from].push(to);
-        graph[to].push(from);
-    }
-    return graph;
-}
-
 function part1(input) {
-    const graph = makeGraph(input);
-    return (function walk(segment, visits = {}) {
+    function walk(segment, graph, visits = {}) {
         return graph[segment].reduce((count, next) => {
             if (next === 'start') return count;
             if (next === 'end') return count + 1;
             if (next === next.toLowerCase()) {
                 if (visits[next]) return count;
-                return count + walk(next, { ...visits, [next]: true });
+                return count + walk(next, graph, { ...visits, [next]: true });
             }
-            return count + walk(next, visits);
+            return count + walk(next, graph, visits);
         }, 0);
-    })('start');
+    }
+    return walk('start', makeGraphBidirectional(input));
 }
 
 function part2(input) {
-    const graph = makeGraph(input);
-    return (function walk(segment, visits = {}, twice = false) {
+    function walk(segment, graph, visits = {}, twice = false) {
         return graph[segment].reduce((count, next) => {
             if (next === 'start') return count;
             if (next === 'end') return count + 1;
 
             const isSmall = next === next.toLowerCase();
             if (isSmall && visits[next] && twice) return count;
-            return count + walk(next, { ...visits, [next]: true }, (isSmall && visits[next]) || twice);
+            return count + walk(next, graph, isSmall ? { ...visits, [next]: true } : visits, visits[next] || twice);
         }, 0);
-    })('start');
+    }
+    return walk('start', makeGraphBidirectional(input));
 }
 
 console.log(`Part1: ${part1(deepCopy(data))}`)

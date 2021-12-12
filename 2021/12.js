@@ -1,22 +1,10 @@
 const fs = require('fs');
-const { deepCopy } = require('../utils');
+const { deepCopy, makeGraphBidirectional } = require('../utils');
 
 const data = fs.readFileSync('12.txt').toString().split('\n').map(line => line.trim().split('-'));
 
-function makeGraph(input) {
-    const graph = {};
-    for (const [from, to] of input) {
-        if (!graph[from]) graph[from] = [];
-        if (!graph[to]) graph[to] = [];
-
-        graph[from].push(to);
-        graph[to].push(from);
-    }
-    return graph;
-}
-
 function part1(input) {
-    const graph = makeGraph(input);
+    const graph = makeGraphBidirectional(input);
     const queue = [{ last: 'start', visits: {} }];
     let pathCount = 0;
 
@@ -38,7 +26,7 @@ function part1(input) {
 }
 
 function part2(input) {
-    const graph = makeGraph(input);
+    const graph = makeGraphBidirectional(input);
     const queue = [{ last: 'start', visits: {}, twice: false }];
     let pathCount = 0;
 

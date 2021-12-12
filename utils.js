@@ -126,6 +126,28 @@ function deepCopy(obj) {
     return JSON.parse(JSON.stringify(obj));
 }
 
+function makeGraphBidirectional(input) {
+    const graph = {};
+    for (const [from, to] of input) {
+        if (!graph[from]) graph[from] = [];
+        if (!graph[to]) graph[to] = [];
+
+        graph[from].push(to);
+        graph[to].push(from);
+    }
+    return graph;
+}
+
+function makeGraph(input) {
+    const graph = {};
+    for (const [from, to] of input) {
+        if (!graph[from]) graph[from] = [];
+
+        graph[from].push(to);
+    }
+    return graph;
+}
+
 
 module.exports = {
     sum,
@@ -139,5 +161,7 @@ module.exports = {
     getNeighbors,
     getNeighborsDiagonal,
     iterateTwoDimArray,
-    deepCopy
+    deepCopy,
+    makeGraph,
+    makeGraphBidirectional
 };
