@@ -41,35 +41,32 @@ function part1(input) {
 
 function part2(input) {
     const graph = makeGraph(input);
-    const paths = [];
-    const queue = [['start']];
+    let pathCount = 0;
+    const queue = [{ path: ['start'], visitingCaveTwice: false }];
 
     while (queue.length) {
         const current = queue.pop();
-        const lastSegment = current[current.length - 1];
+        const lastSegment = current.path[current.path.length - 1];
 
         if (lastSegment === 'end') {
-            paths.push(current);
+            pathCount++;
             continue;
         }
 
         const nextRoutes = graph[lastSegment] || [];
         for (let n of nextRoutes) {
-            let smallCavesVisited = {};
-            for (let g = 0; g < current.length; g++) {
-                if (current[g] !== 'start' && current[g].toLowerCase() === current[g]) {
-                    smallCavesVisited[current[g]] = (smallCavesVisited[current[g]] || 0) + 1
-                }
+            if (n === 'start') continue;
+            if (n === n.toLowerCase()) {
+                const alreadyVisited = !!current.path.find(e => e === n);
+                if (alreadyVisited && current.visitingCaveTwice) continue;
+                queue.push({ path: [...current.path, n], visitingCaveTwice: current.visitingCaveTwice || alreadyVisited });
+            } else {
+                queue.push({ path: [...current.path, n], visitingCaveTwice: current.visitingCaveTwice });
             }
-
-            const hasSmallCaveVisitedMoreThanOnce = Object.values(smallCavesVisited).filter(v => v > 1).length > 0;
-
-            if (n === 'start' || (n === n.toLowerCase() && (hasSmallCaveVisitedMoreThanOnce && current.filter(e => e === n).length))) continue;
-            queue.push([...current, n]);
         }
     }
 
-    return paths.length;
+    return pathCount;
 }
 
 console.log(`Part1: ${part1(deepCopy(data))}`)
