@@ -23,10 +23,11 @@ function part2(input) {
         return graph[segment].reduce((count, next) => {
             if (next === 'start') return count;
             if (next === 'end') return count + 1;
-
-            const isSmall = next === next.toLowerCase();
-            if (isSmall && visits[next] && twice) return count;
-            return count + walk(next, graph, isSmall ? { ...visits, [next]: true } : visits, visits[next] || twice);
+            if (next === next.toLowerCase()) {
+                if (visits[next] && twice) return count;
+                return count + walk(next, graph, { ...visits, [next]: true }, twice || visits[next]);
+            }
+            return count + walk(next, graph, visits, twice);
         }, 0);
     }
     return walk('start', makeGraphBidirectional(input));
