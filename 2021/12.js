@@ -17,22 +17,20 @@ function makeGraph(input) {
 
 function part1(input) {
     const graph = makeGraph(input);
-    const queue = [['start']];
+    const queue = [{ last: 'start', visits: {} }];
     let pathCount = 0;
 
     while (queue.length) {
         const current = queue.pop();
-        const lastSegment = current[current.length - 1];
-
-        if (lastSegment === 'end') {
-            pathCount++;
-            continue;
-        }
-
-        const nextRoutes = graph[lastSegment] || [];
+        const nextRoutes = graph[current.last] || [];
         for (let n of nextRoutes) {
-            if (n === n.toLowerCase() && current.includes(n)) continue;
-            queue.push([...current, n]);
+            if (n === 'start') continue;
+            if (n === 'end') {
+                pathCount++;
+                continue;
+            }
+            if (n === n.toLowerCase() && current.visits[n]) continue;
+            queue.push({ last: n, visits: { ...current.visits, [n]: true } });
         }
     }
 
@@ -41,27 +39,26 @@ function part1(input) {
 
 function part2(input) {
     const graph = makeGraph(input);
-    const queue = [{ path: ['start'], visitingCaveTwice: false }];
+    const queue = [{ last: 'start', visits: {}, twice: false }];
     let pathCount = 0;
 
     while (queue.length) {
         const current = queue.pop();
-        const lastSegment = current.path[current.path.length - 1];
-
-        if (lastSegment === 'end') {
-            pathCount++;
-            continue;
-        }
-
-        const nextRoutes = graph[lastSegment] || [];
+        const nextRoutes = graph[current.last] || [];
         for (let n of nextRoutes) {
             if (n === 'start') continue;
-            if (n === n.toLowerCase()) {
-                const alreadyVisited = !!current.path.includes(n);
-                if (alreadyVisited && current.visitingCaveTwice) continue;
-                queue.push({ path: [...current.path, n], visitingCaveTwice: current.visitingCaveTwice || alreadyVisited });
+            if (n === 'end') {
+                pathCount++;
+                continue;
+            }
+            const isSmall = n === n.toLowerCase();
+
+            if (isSmall && current.visits[n] && current.twice) continue;
+
+            if (isSmall) {
+                queue.push({ last: n, visits: { ...current.visits, [n]: true }, twice: current.visits[n] || current.twice });
             } else {
-                queue.push({ ...current, path: [...current.path, n] });
+                queue.push({ ...current, last: n });
             }
         }
     }
