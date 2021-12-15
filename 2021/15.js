@@ -8,22 +8,25 @@ function findPath(input, start, end) {
     const visited = {};
     const queue = new PriorityQueue.default('min');
 
-    queue.enqueue({ loc: start, risk: 0  }, 0);
+    queue.enqueue({ loc: start, risk: 0 }, 0);
 
     while (queue.size()) {
         const el = queue.dequeue();
-        visited[`${el.loc[0]},${el.loc[1]}`] = el.risk;
 
         if (el.loc[0] === end[0] && el.loc[1] === end[1]) {
             return el;
         }
 
-        const neighbors = getNeighbors(el.loc, input).map(e => ({ loc: e, risk: el.risk + input[e[0]][e[1]] }));
-        for (const n of neighbors) {
-            if (visited[`${n.loc[0]},${n.loc[1]}`] && visited[`${n.loc[0]},${n.loc[1]}`] <= n.risk) {
+        for (const loc of getNeighbors(el.loc, input)) {
+            const risk = el.risk + input[loc[0]][loc[1]];
+            const locKey = `${loc[0]},${loc[1]}`;
+
+            if (visited[locKey] && visited[locKey] <= risk) {
                 continue;
             }
-            queue.enqueue(n, n.risk + Math.abs(end[0] - n.loc[0]) + Math.abs(end[1] - n.loc[1]));
+            
+            visited[locKey] = risk;
+            queue.enqueue({ loc, risk }, risk);
         }
     }
 
