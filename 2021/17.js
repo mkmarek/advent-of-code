@@ -60,7 +60,7 @@ function part1(input) {
 
 function part2(input) {
   let velocities = [];
-  for (let x = -1000; x < 1000; x++) {
+  for (let x = 0; x < 1000; x++) {
     for (let y = -1000; y < 1000; y++) {
       const result = endsUpInTargetArea({ x: x, y: y }, input);
       if (result[0]) velocities.push({ x: x, y: y });
