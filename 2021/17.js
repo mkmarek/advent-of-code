@@ -44,6 +44,9 @@ function endsUpInTargetArea(initialVelocity, target) {
     if (position.x > target.x[1]) {
       return [false, maxY];
     }
+    if (position.x < target.x[0] && velocity.x === 0) {
+      return [false, maxY];
+    }
   }
 }
 
