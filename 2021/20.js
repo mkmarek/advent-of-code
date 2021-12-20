@@ -1,5 +1,4 @@
 const fs = require("fs");
-const { deepCopy, getNeighbors, distinct, sum } = require("../utils");
 
 function parseInput() {
   const data = fs
@@ -51,15 +50,7 @@ function getIndex(input, x, y, background) {
   return parseInt(output, 2);
 }
 
-function enhance(
-  input,
-  enhancement,
-  x1,
-  x2,
-  y1,
-  y2,
-  background = "."
-) {
+function enhance(input, enhancement, x1, x2, y1, y2, background) {
   let output = [];
   for (let x = x1 - 1; x < x2 + 1; x++) {
     for (let y = y1 - 1; y < y2 + 1; y++) {
@@ -72,48 +63,11 @@ function enhance(
       output[x][y] = enhancement[index];
     }
   }
-  return [output, x1 - 1, x2 + 1, y1 - 1, y2 + 1];
+
+  return [output, x1 - 1, x2 + 1, y1 - 1, y2 + 1, enhancement[background === '#' ? 511 : 0]];
 }
 
-function solve(enhancement, input, turns) {
-  let x1 = 0;
-  let x2 = input.length;
-  let y1 = 0;
-  let y2 = input[0].length;
-
-  let background = ".";
-  for (let i = 0; i < turns; i++) {
-    const [output, _x1, _x2, _y1, _y2] = enhance(
-      input,
-      enhancement,
-      x1,
-      x2,
-      y1,
-      y2,
-      1,
-      background
-    );
-    input = output;
-    x1 = _x1;
-    x2 = _x2;
-    y1 = _y1;
-    y2 = _y2;
-
-    background =
-      enhancement[
-        getIndex(
-          [
-            [background, background, background],
-            [background, background, background],
-            [background, background, background],
-          ],
-          0,
-          0,
-          background
-        )
-      ];
-  }
-
+function countLit(input, x1, x2, y1, y2) {
   let lit = 0;
   for (let x = x1; x < x2; x++) {
     for (let y = y1; y < y2; y++) {
@@ -127,6 +81,15 @@ function solve(enhancement, input, turns) {
   }
 
   return lit;
+}
+
+function solve(enhancement, input, turns) {
+  let params = [input, 0, input.length, 0, input[0].length, "."];
+  for (let i = 0; i < turns; i++) {
+    params = enhance(params[0], enhancement, ...params.slice(1));
+  }
+
+  return countLit(...params.slice(0, 5));
 }
 
 function part1([enhancement, input]) {
