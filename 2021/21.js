@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { cache, groupBy } = require("../utils");
 
 function parseInput() {
   const data = fs
@@ -57,58 +58,13 @@ function part1(input) {
   }
 }
 
-function getoutcomes() {
-  return [
-    [1, 1, 1],
-    [1, 1, 2],
-    [1, 1, 3],
-    [1, 2, 1],
-    [1, 2, 2],
-    [1, 2, 3],
-    [1, 3, 1],
-    [1, 3, 2],
-    [1, 3, 3],
-    [2, 1, 1],
-    [2, 1, 2],
-    [2, 1, 3],
-    [2, 2, 1],
-    [2, 2, 2],
-    [2, 2, 3],
-    [2, 3, 1],
-    [2, 3, 2],
-    [2, 3, 3],
-    [3, 1, 1],
-    [3, 1, 2],
-    [3, 1, 3],
-    [3, 2, 1],
-    [3, 2, 2],
-    [3, 2, 3],
-    [3, 3, 1],
-    [3, 3, 2],
-    [3, 3, 3],
-  ].map((e) => e[0] + e[1] + e[2]);
-}
-
-function getCacheKey(player1, player2, isplayer1) {
-  return JSON.stringify({
-    player1,
-    player2,
-    isplayer1
-  });
-}
-
-const stateCache = {};
+const cachedPlay = cache("play", play);
+const diceOutcomes = { 3: 1, 4: 3, 5: 6, 6: 7, 7: 6, 8: 3, 9: 1 };
 function play(player1, player2, isplayer1) {
-  const cacheKey = getCacheKey(player1, player2, isplayer1);
-
-  if (stateCache[cacheKey]) {
-    return stateCache[cacheKey];
-  }
-
   let p1wins = 0;
   let p2wins = 0;
 
-  for (let outcome of getoutcomes()) {
+  for (let outcome of Object.keys(diceOutcomes)) {
     const tmp = { ...(isplayer1 ? player1 : player2) };
 
     let newPos = tmp.position + Number(outcome);
@@ -121,30 +77,25 @@ function play(player1, player2, isplayer1) {
 
     if (tmp.points >= 21) {
       if (isplayer1) {
-        p1wins++;
-      }
-      if (!isplayer1) {
-        p2wins++;
+        p1wins += diceOutcomes[outcome];
+      } else {
+        p2wins += diceOutcomes[outcome];
       }
     } else {
       const [a, b] = isplayer1
-        ? play(tmp, player2, !isplayer1)
-        : play(player1, tmp, !isplayer1);
+        ? cachedPlay(tmp, player2, !isplayer1)
+        : cachedPlay(player1, tmp, !isplayer1);
 
-      p1wins += a;
-      p2wins += b;
+      p1wins += a * diceOutcomes[outcome];
+      p2wins += b * diceOutcomes[outcome];
     }
   }
-
-  stateCache[cacheKey] = [p1wins, p2wins];
 
   return [p1wins, p2wins];
 }
 
 function part2(input) {
-  const [p1, p2] = play(input[0], input[1], true);
-
-  return Math.max(p1, p2);
+  return Math.max(...cachedPlay(input[0], input[1], true));
 }
 
 console.log(`Part1: ${part1(parseInput())}`);

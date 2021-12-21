@@ -85,6 +85,17 @@ function intersect(a, b) {
     return t;
 }
 
+const cacheStorage = {};
+function cache(name, func) {
+    return (...args) => {
+        const key = `${name}-${JSON.stringify(args)}`;
+        if (!cacheStorage[key]) {
+            cacheStorage[key] = func(...args);
+        }
+        return cacheStorage[key];
+    }   
+}
+
 function getNeighbors(pos, input) {
     let neighbors = [
         [- 1, 0],
@@ -163,5 +174,6 @@ module.exports = {
     iterateTwoDimArray,
     deepCopy,
     makeGraph,
-    makeGraphBidirectional
+    makeGraphBidirectional,
+    cache
 };
