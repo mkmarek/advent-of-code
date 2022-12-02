@@ -18,7 +18,6 @@ const right = {
   'Z': 'scissors'
 }
 
-
 const scores = {
   'rock': 1,
   'paper': 2,
@@ -49,40 +48,10 @@ function part1() {
 
     score += scores[b];
 
-    if (a === 'rock') {
-      if (b === 'rock') {
-        score += 3;
-      }
-      if (b === 'paper') {
-        score += 6;
-      }
-      if (b === 'scissors') {
-        // nothing
-      }
-    }
-
-    if (a === 'paper') {
-      if (b === 'rock') {
-        // nothing
-      }
-      if (b === 'paper') {
-        score += 3;
-      }
-      if (b === 'scissors') {
-        score += 6;
-      }
-    }
-
-    if (a === 'scissors') {
-      if (b === 'rock') {
-        score += 6;
-      }
-      if (b === 'paper') {
-        // nothing
-      }
-      if (b === 'scissors') {
-        score += 3;
-      }
+    if (a === b) {
+      score += 3;
+    } else if (winning[a] === b) {
+      score += 6;
     }
   }
 
@@ -97,56 +66,17 @@ function part2() {
     }
 
     let a = left[input[i][0]];
-    let b = null;
 
     if (input[i][1] === 'X') {
-      b = losing[a];
+      score += scores[losing[a]];
     }
 
     if (input[i][1] === 'Y') {
-      b = a;
+      score += 3 + scores[a];
     }
 
     if (input[i][1] === 'Z') {
-      b = winning[a];
-    }
-
-    score += scores[b];
-
-    if (a === 'rock') {
-      if (b === 'rock') {
-        score += 3;
-      }
-      if (b === 'paper') {
-        score += 6;
-      }
-      if (b === 'scissors') {
-        // nothing
-      }
-    }
-
-    if (a === 'paper') {
-      if (b === 'rock') {
-        // nothing
-      }
-      if (b === 'paper') {
-        score += 3;
-      }
-      if (b === 'scissors') {
-        score += 6;
-      }
-    }
-
-    if (a === 'scissors') {
-      if (b === 'rock') {
-        score += 6;
-      }
-      if (b === 'paper') {
-        // nothing
-      }
-      if (b === 'scissors') {
-        score += 3;
-      }
+      score += 6 + scores[winning[a]];
     }
   }
 
