@@ -4,26 +4,20 @@ const { sum, groupBy, toKeyValue, intersect, distinct, iterateTwoDimArray} = req
 const input = fs.readFileSync('6.txt').toString()
   .trim()
 
-function allLastCharactersDifferent(str, num) {
-  let last = str.substring(str.length - num);
-  let set = new Set(last);
-  return set.size === num;
+function scan(uniqueCharacterSize) {
+  for (let i = uniqueCharacterSize; i < input.length; i++) {
+    if (new Set(input.substring(i - uniqueCharacterSize, i)).size === uniqueCharacterSize) {
+      return i
+    }
+  }
 }
 
 function part1() {
-  for (let i = 4; i < input.length; i++) {
-    if (allLastCharactersDifferent(input.substring(i - 4, i), 4)) {
-      return i
-    }
-  }
+  return scan(4);
 }
 
 function part2() {
-  for (let i = 14; i < input.length; i++) {
-    if (allLastCharactersDifferent(input.substring(i - 14, i), 14)) {
-      return i
-    }
-  }
+  return scan(14);
 }
 
 console.log(`Part1: ${part1()}`)
