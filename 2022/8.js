@@ -15,119 +15,41 @@ const input = fs
   .split("\n")
   .map((x) => x.trim().split(""));
 
-function isVisible(x, y, grid) {
-  if (x == 0 || y == 0 || x == grid[0].length - 1 || y == grid.length - 1) {
-    return true;
-  }
-
-  let val = grid[y][x];
-
-  let v = true;
-  for (let i = 0; i < x; i++) {
-    if (grid[y][i] >= val) {
-      v = false;
-      break;
-    }
-  }
-
-  if (v) {
-    return true;
-  }
-
-  v = true;
-  for (let i = x + 1; i < grid[0].length; i++) {
-    if (grid[y][i] >= val) {
-      v = false;
-      break;
-    }
-  }
-
-  if (v) {
-    return true;
-  }
- v = true;
-  for (let i = 0; i < y; i++) {
-    if (grid[i][x] >= val) {
-      v = false;
-      break;
-    }
-  }
-
-  if (v) {
-    return true;
-  }
-
-  v = true;
-  for (let i = y+1; i < grid.length; i++) {
-    if (grid[i][x] >= val) {
-      v = false;
-      break;
-    }
-  }
-
-  if (v) {
-    return true;
-  }
-
-  return false;
+function getTrees(x, y, input) {
+  return [
+    input[y].slice(0, x).reverse(),
+    input[y].slice(x + 1),
+    input
+      .map((v) => v[x])
+      .slice(0, y)
+      .reverse(),
+    input.map((v) => v[x]).slice(y + 1),
+  ];
 }
 
 function part1() {
   let cnt = 0;
-  iterateTwoDimArray(input, (val, x, y) => {
-
-
-    if (isVisible(x, y, input)) {
-      cnt++
+  iterateTwoDimArray(input, (val, y, x) => {
+    if (getTrees(x, y, input).some((e) => e.every((v) => v < val))) {
+      cnt++;
     }
   });
 
   return cnt;
 }
 
-function scenicScore(x, y, grid) {
-  let val = grid[y][x];
-
-  let a = 0;
-  for (let i = x-1; i >= 0; i--) {
-    a++;
-    if (grid[y][i] >= val) {
-      break;
-    }
-  }
-
-  let b = 0;
-  for (let i = x + 1; i < grid[0].length; i++) {
-    b++;
-    if (grid[y][i] >= val) {
-      break;
-    }
-  }
-
-
-  let c = 0;
-  for (let i = y - 1; i >= 0; i--) {
-    c++;
-    if (grid[i][x] >= val) {
-      break
-    }
-  }
-
-  let d = 0;
-  for (let i = y + 1; i < grid.length; i++) {
-    d++;
-    if (grid[i][x] >= val) {
-      break
-    }
-  }
-
-  return a * b * c * d;
-}
-
 function part2() {
   let score = 0;
-  iterateTwoDimArray(input, (val, x, y) => {
-    let s = scenicScore(x, y, input)
+  iterateTwoDimArray(input, (val, y, x) => {
+    let s = getTrees(x, y, input).reduce((p, c) => {
+      const biggerIndex = c.findIndex((v) => v >= val);
+      if (biggerIndex === -1) {
+        return p * c.length;
+      }
+
+      return p * (biggerIndex + 1);
+    }, 1);
+
     if (s > score) {
       score = s;
     }
