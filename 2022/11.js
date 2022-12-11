@@ -18,9 +18,9 @@ const input = fs
     monkey: Number(x.split("\r\n")[0].split(" ")[1].slice(0, -1)),
     items: x.split("\r\n")[1].split(": ")[1].split(",").map(Number),
     operation: x.split("\r\n")[2].split(": ")[1].trim(),
-    test: x.split("\r\n")[3].split(": ")[1].trim(),
-    ifTrue: x.split("\r\n")[4].split(": ")[1].trim(),
-    ifFalse: x.split("\r\n")[5].split(": ")[1].trim(),
+    test: Number(x.split("\r\n")[3].split(": ")[1].trim().split(" ")[2]),
+    ifTrue: Number(x.split("\r\n")[4].split(": ")[1].trim().split(" ")[3]),
+    ifFalse: Number(x.split("\r\n")[5].split(": ")[1].trim().split(" ")[3]),
   }));
 
 function evalExpression(expr, old) {
@@ -54,7 +54,32 @@ function evalExpression(expr, old) {
     }
   }
 
-  throw new Error("!= new =");
+  throw new Error("Unexpected expression: " + expr);
+}
+
+function runRound(monkeys, inspects, worryModifier) {
+  for (let i = 0; i < monkeys.length; i++) {
+    for (let j = 0; j < monkeys[i].items.length; j++) {
+      inspects[i] = (inspects[i] || 0) + 1;
+      let worryLevel = worryModifier(
+        evalExpression(monkeys[i].operation, monkeys[i].items[j])
+      );
+
+      if (worryLevel % monkeys[i].test == 0) {
+        monkeys[monkeys[i].ifTrue].items.push(worryLevel);
+        monkeys[i].items = monkeys[i].items
+          .slice(0, j)
+          .concat(monkeys[i].items.slice(j + 1));
+        j--;
+      } else {
+        monkeys[monkeys[i].ifFalse].items.push(worryLevel);
+        monkeys[i].items = monkeys[i].items
+          .slice(0, j)
+          .concat(monkeys[i].items.slice(j + 1));
+        j--;
+      }
+    }
+  }
 }
 
 function part1() {
@@ -62,43 +87,7 @@ function part1() {
 
   let inspects = [];
   for (let round = 0; round < 20; round++) {
-    for (let i = 0; i < monkeys.length; i++) {
-      for (let j = 0; j < monkeys[i].items.length; j++) {
-        inspects[i] = (inspects[i] || 0) + 1;
-        let worryLevel = Math.floor(
-          evalExpression(monkeys[i].operation, monkeys[i].items[j]) / 3
-        );
-
-        if (monkeys[i].test.startsWith("divisible by ")) {
-          let n = Number(monkeys[i].test.split(" ")[2]);
-          if (worryLevel % n == 0) {
-            if (monkeys[i].ifTrue.startsWith("throw to monkey ")) {
-              let m = Number(monkeys[i].ifTrue.split(" ")[3]);
-              monkeys[m].items.push(worryLevel);
-              monkeys[i].items = monkeys[i].items
-                .slice(0, j)
-                .concat(monkeys[i].items.slice(j + 1));
-              j--;
-            } else {
-              throw new Error("!= throw to monkey");
-            }
-          } else {
-            if (monkeys[i].ifFalse.startsWith("throw to monkey ")) {
-              let m = Number(monkeys[i].ifFalse.split(" ")[3]);
-              monkeys[m].items.push(worryLevel);
-              monkeys[i].items = monkeys[i].items
-                .slice(0, j)
-                .concat(monkeys[i].items.slice(j + 1));
-              j--;
-            } else {
-              throw new Error("!= throw to monkey");
-            }
-          }
-        } else {
-          throw new Error("!= divisible by");
-        }
-      }
-    }
+    runRound(monkeys, inspects, (x) => Math.floor(x / 3));
   }
 
   return inspects
@@ -109,50 +98,15 @@ function part1() {
 
 function part2() {
   let monkeys = deepCopy(input);
+
   let productOfWorries = 1;
   for (let i = 0; i < input.length; i++) {
-    productOfWorries *= input[i].test.split(" ")[2];
+    productOfWorries *= input[i].test;
   }
 
   let inspects = [];
   for (let round = 0; round < 10000; round++) {
-    for (let i = 0; i < monkeys.length; i++) {
-      for (let j = 0; j < monkeys[i].items.length; j++) {
-        inspects[i] = (inspects[i] || 0) + 1;
-        let worryLevel =
-          evalExpression(monkeys[i].operation, monkeys[i].items[j]) %
-          productOfWorries;
-
-        if (monkeys[i].test.startsWith("divisible by ")) {
-          let n = Number(monkeys[i].test.split(" ")[2]);
-          if (worryLevel % n == 0) {
-            if (monkeys[i].ifTrue.startsWith("throw to monkey ")) {
-              let m = Number(monkeys[i].ifTrue.split(" ")[3]);
-              monkeys[m].items.push(worryLevel);
-              monkeys[i].items = monkeys[i].items
-                .slice(0, j)
-                .concat(monkeys[i].items.slice(j + 1));
-              j--;
-            } else {
-              throw new Error("!= throw to monkey");
-            }
-          } else {
-            if (monkeys[i].ifFalse.startsWith("throw to monkey ")) {
-              let m = Number(monkeys[i].ifFalse.split(" ")[3]);
-              monkeys[m].items.push(worryLevel);
-              monkeys[i].items = monkeys[i].items
-                .slice(0, j)
-                .concat(monkeys[i].items.slice(j + 1));
-              j--;
-            } else {
-              throw new Error("!= throw to monkey");
-            }
-          }
-        } else {
-          throw new Error("!= divisible by");
-        }
-      }
-    }
+    runRound(monkeys, inspects, (x) => x % productOfWorries);
   }
 
   return inspects
