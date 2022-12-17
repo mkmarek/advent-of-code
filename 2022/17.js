@@ -1,6 +1,6 @@
 const fs = require("fs");
 const PriorityQueue = require("javascript-priority-queue");
-const {QuadTree, Box} = require('js-quadtree');
+const { QuadTree, Box } = require("js-quadtree");
 const {
   sum,
   groupBy,
@@ -40,8 +40,8 @@ const shapes = `####
       .split("\n")
       .filter((e) => e.length)
       .map((x) => x.split("").filter((x) => x.length))
-);
-  
+  );
+
 function shapeBoundsWithoutPosition(shape) {
   let bounds = { x1: null, y1: null, x2: null, y2: null };
 
@@ -71,10 +71,10 @@ function shapeBoundsWithoutPosition(shape) {
   return bounds;
 }
 
-const boundsForShapes = shapes.map(e => shapeBoundsWithoutPosition(e));
+const boundsForShapes = shapes.map((e) => shapeBoundsWithoutPosition(e));
 
 function shapeBounds(shapeIndex, position) {
-  const bounds = boundsForShapes[shapeIndex]
+  const bounds = boundsForShapes[shapeIndex];
 
   return {
     x1: bounds.x1 + position.x,
@@ -98,23 +98,25 @@ function isPointInShape(point, shap) {
   return false;
 }
 
-function boundsOverlap(a, b) {
-  return a.y1 <= b.y2 && b.x1 <= a.x2 && a.x1 <= b.x2 && b.y1 <= a.y2;
+function imprintShape(map, shape) {
+  const bounds = shapeBounds(shape.shape, shape.position);
+
+  for (let y = bounds.y1; y <= bounds.y2; y++) {
+    for (let x = bounds.x1; x <= bounds.x2; x++) {
+      if (isPointInShape({ x, y }, shape)) {
+        map[`${x},${y}`] = true;
+      }
+    }
+  }
 }
 
-function shapesOverlap(a, b) {
-  const boundsA = shapeBounds(a.shape, a.position);
-  const boundsB = shapeBounds(b.shape, b.position);
+function isShapeOnMap(map, shape) {
+  const bounds = shapeBounds(shape.shape, shape.position);
 
-  if (!boundsOverlap(boundsA, boundsB)) {
-    return false;
-  }
-
-  const shape = shapes[a.shape];
-  for (let y = boundsA.y1; y < boundsA.y2; y++) {
-    for (let x = boundsA.x1; x < boundsA.x2; x++) {
-      if (shape[y - boundsA.y1][x - boundsA.x1] === "#") {
-        if (isPointInShape({ x, y }, b)) {
+  for (let y = bounds.y1; y <= bounds.y2; y++) {
+    for (let x = bounds.x1; x <= bounds.x2; x++) {
+      if (isPointInShape({ x, y }, shape)) {
+        if (map[`${x},${y}`]) {
           return true;
         }
       }
@@ -125,7 +127,7 @@ function shapesOverlap(a, b) {
 }
 
 function part1(interval) {
-  const chamber = [];
+  const map = {};
   let fallingShape = null;
   let shapeIndex = 0;
   let yLimit = -3;
@@ -140,7 +142,7 @@ function part1(interval) {
       const diff = Math.abs(yLimit + 3) - previous;
       previous = Math.abs(yLimit + 3);
       prevIter = iter;
-      diffs.push(diff)
+      diffs.push(diff);
     }
     if (iter === interval) {
       return [Math.abs(yLimit + 3), diffs];
@@ -158,25 +160,16 @@ function part1(interval) {
     let bounds = shapeBounds(fallingShape.shape, fallingShape.position);
 
     if (input[i] === ">") {
-      let wouldOverlap = false;
-
       if (bounds.x2 < 7) {
-        for (let s of chamber) {
-          if (
-            shapesOverlap(s, {
-              shape: fallingShape.shape,
-              position: {
-                x: fallingShape.position.x + 1,
-                y: fallingShape.position.y,
-              },
-            })
-          ) {
-            wouldOverlap = true;
-            break;
-          }
-        }
-
-        if (!wouldOverlap) {
+        if (
+          !isShapeOnMap(map, {
+            shape: fallingShape.shape,
+            position: {
+              x: fallingShape.position.x + 1,
+              y: fallingShape.position.y,
+            },
+          })
+        ) {
           fallingShape.position.x++;
         }
       }
@@ -184,23 +177,15 @@ function part1(interval) {
 
     if (input[i] === "<") {
       if (bounds.x1 > 0) {
-        let wouldOverlap = false;
-        for (let s of chamber) {
-          if (
-            shapesOverlap(s, {
-              shape: fallingShape.shape,
-              position: {
-                x: fallingShape.position.x - 1,
-                y: fallingShape.position.y,
-              },
-            })
-          ) {
-            wouldOverlap = true;
-            break;
-          }
-        }
-
-        if (!wouldOverlap) {
+        if (
+          !isShapeOnMap(map, {
+            shape: fallingShape.shape,
+            position: {
+              x: fallingShape.position.x - 1,
+              y: fallingShape.position.y,
+            },
+          })
+        ) {
           fallingShape.position.x--;
         }
       }
@@ -208,34 +193,31 @@ function part1(interval) {
 
     bounds = shapeBounds(fallingShape.shape, fallingShape.position);
     if (bounds.y2 === 0) {
-      chamber.push(fallingShape);
+      imprintShape(map, fallingShape);
       iter++;
       if (fallingShape.position.y - 3 < yLimit) {
-        yLimit = fallingShape.position.y - 3
+        yLimit = fallingShape.position.y - 3;
       }
       fallingShape = null;
       i = (i + 1) % input.length;
       continue;
     }
 
-    for (let s of chamber) {
-      if (
-        shapesOverlap(s, {
-          shape: fallingShape.shape,
-          position: {
-            x: fallingShape.position.x,
-            y: fallingShape.position.y + 1,
-          },
-        })
-      ) {
-        chamber.push(fallingShape);
-        iter++;
-        if (fallingShape.position.y - 3 < yLimit) {
-          yLimit = fallingShape.position.y - 3
-        }
-        fallingShape = null;
-        break;
+    if (
+      isShapeOnMap(map, {
+        shape: fallingShape.shape,
+        position: {
+          x: fallingShape.position.x,
+          y: fallingShape.position.y + 1,
+        },
+      })
+    ) {
+      imprintShape(map, fallingShape);
+      iter++;
+      if (fallingShape.position.y - 3 < yLimit) {
+        yLimit = fallingShape.position.y - 3;
       }
+      fallingShape = null;
     }
 
     if (fallingShape != null) {
@@ -246,8 +228,8 @@ function part1(interval) {
   }
 }
 
-function findRepeatedSubstrings(str, length) {
-  let largest = '';
+function findRepeatedSubstrings(str) {
+  let largest = "";
   let largestIndex = 0;
 
   for (let i = 0; i < str.length; i++) {
@@ -258,6 +240,8 @@ function findRepeatedSubstrings(str, length) {
           largest = substring;
           largestIndex = i;
         }
+      } else {
+        break;
       }
     }
   }
@@ -267,19 +251,28 @@ function findRepeatedSubstrings(str, length) {
 
 function part2() {
   const iters = 1000000000000;
-  const [, diffs] = part1(Math.floor(input.length * 1.5))
- 
-  const diffsStr = diffs.join('');
-  const [largestRepeatedSubstring, startIndex] = findRepeatedSubstrings(diffsStr);
-  const beginning = diffs.slice(0, startIndex);
-  const repetition = diffsStr.substring(startIndex, diffsStr.indexOf(largestRepeatedSubstring, startIndex + 1)).split('').map(Number)
+  const [, diffs] = part1(Math.floor(input.length * 2));
 
-  const repetitionSum = sum(repetition)
+  const diffsStr = diffs.join("");
+  const [largestRepeatedSubstring, startIndex] =
+    findRepeatedSubstrings(diffsStr);
+  const beginning = diffs.slice(0, startIndex);
+  const repetition = diffsStr
+    .substring(
+      startIndex,
+      diffsStr.indexOf(largestRepeatedSubstring, startIndex + 1)
+    )
+    .split("")
+    .map(Number);
+
+  const repetitionSum = sum(repetition);
   const numReps = repetition.length;
 
-  const itersWithoutStart = (iters - beginning.length);
-  const numberOfCompleteRepetitions = Math.floor((itersWithoutStart - beginning.length) / numReps);
-  const remainder = itersWithoutStart - numberOfCompleteRepetitions * numReps
+  const itersWithoutStart = iters - beginning.length;
+  const numberOfCompleteRepetitions = Math.floor(
+    (itersWithoutStart - beginning.length) / numReps
+  );
+  const remainder = itersWithoutStart - numberOfCompleteRepetitions * numReps;
 
   let value = sum(beginning) + numberOfCompleteRepetitions * repetitionSum;
 
