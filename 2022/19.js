@@ -24,8 +24,6 @@ const input = fs
   .trim()
   .split("\n")
   .map((x) => x.split(": ")[1])
-  //Each ore robot costs 4 ore
-  // Each obsidian robot costs 3 ore and 14 clay
   .map((x) =>
     x.split(". ").map((v) => ({
       material: v.split(" ")[1],
@@ -39,247 +37,216 @@ const input = fs
     }))
   );
 
-function notBuiltRobots(state, recipe) {
-  return recipe.filter((x) => !state.robots[x.material]);
+function hasEnoughMaterialsFor(robot, state, recipe) {
+  const neededMaterials = recipe.find((x) => x.material === robot).cost;
+  return neededMaterials.every((x) => state.materials[x.material] >= x.amount);
 }
 
-function possibleActions(state, recipe) {
-  if (state.minute >= 32) {
-    return [];
-  }
-
-  const maxNeededMaterials = recipe.reduce((acc, x) => {
+function maximumNeededMaterialsPerTurn(state, recipe) {
+  return recipe.reduce((acc, x) => {
     for (let y of x.cost) {
-      acc[y.material] = Math.max(acc[y.material] || 0,  y.amount);
+      acc[y.material] = Math.max(acc[y.material] || 0, y.amount);
     }
     return acc;
   }, {});
-
-  maxNeededMaterials['geode'] = 999999;
-
-  const possibleRobots = recipe.filter((x) =>
-    x.cost.every((y) => state.materials[y.material] >= y.amount)
-  ).filter(x => !state.robots[x.material] || state.robots[x.material] < maxNeededMaterials[x.material]);
-
-  const neededRobots = recipe.filter(x => !state.robots[x.material] || state.robots[x.material] < maxNeededMaterials[x.material]);
-
-  const actions = possibleRobots.map((x) => ({
-    type: "build",
-    robot: x.material,
-  }));
-
-  // const notbuilt = notBuiltRobots(state, recipe);
-
-  // const newActions = actions.filter(x => notbuilt.some(y => y.material === x.robot));
-  // if (newActions.length) {
-  //   return newActions;
-  // }
-
-  if (actions.length === 0 || neededRobots.length > 0) {
-    actions.push({
-      type: "wait",
-    });
-  }
-
-  // console.log(actions);
-
-  return distinct(actions);
 }
 
-const priority = {
-  'ore': 1,
-  'clay': 10,
-  'obsidian': 100,
-  'geode': 1000,
+function possibleActions(state, recipe, maxMinutes) {
+  if (state.minute >= maxMinutes) {
+    return [];
+  }
+
+  const maxNeededMaterials = maximumNeededMaterialsPerTurn(state, recipe);
+
+  if (hasEnoughMaterialsFor("geode", state, recipe)) {
+    return [
+      {
+        type: "build",
+        robot: "geode",
+      },
+    ];
+  }
+
+  const actions = [];
+  for (let mat of ["ore", "clay", "obsidian"]) {
+    if (
+      state.robots[mat] < maxNeededMaterials[mat] &&
+      hasEnoughMaterialsFor(mat, state, recipe)
+    ) {
+      actions.push({
+        type: "build",
+        robot: mat,
+      });
+    }
+
+    const neededMaterials = distinct(
+      recipe
+        .filter(
+          (e) => state.robots[e.material] < maxNeededMaterials[e.material]
+        )
+        .map((e) => e.cost)
+        .flat()
+        .filter((e) => e.material === mat)
+        .map((e) => e.amount)
+    );
+
+    if (state.robots[mat] > 0) {
+      let minNeeded = maxNeededMaterials[mat];
+      for (let neededMaterial of neededMaterials) {
+        if (
+          neededMaterial < minNeeded &&
+          state.materials[mat] < neededMaterial
+        ) {
+          minNeeded = neededMaterial;
+        }
+      }
+      actions.push({
+        type: "wait",
+        material: mat,
+        until: minNeeded,
+      });
+    }
+  }
+
+  return actions;
 }
 
 function score(state, recipe) {
-  return state.minute * (notBuiltRobots(state,recipe).length + 1);
+  return state.minute; // / (recipe.filter(e => !state.robots[e.material]).length + 1)
 }
 
-function getCloseKey(state) {
-  return JSON.stringify({ minutes: state.minutes, materials: state.materials, robots: state.robots });
-}
-
-function part1() {
+function part1(minutes, length) {
   let values = [];
-  for (let h = 2; h < Math.min(input.length, 3); h++) {
-    let max = 0;
-    const maxInMinutes = {};
-
-    const state = {
-      minute: 0,
-      robots: {
-        ore: 1,
-      },
-      materials: {
-        ore: 0,
-      },
-    };
-
+  for (let h = 0; h < length; h++) {
+    let max = null;
     const recipe = input[h];
-    console.log("iter", h);
     const open = new PriorityQueue.default("min");
-    const close = {};
-    const actionCache = {};
-    open.enqueue(state, 0);
+    const maxGeodesPerMinute = {};
+
+    open.enqueue(
+      {
+        minute: 0,
+        robots: {
+          ore: 1,
+          clay: 0,
+          obsidian: 0,
+          geode: 0,
+        },
+        materials: {
+          ore: 0,
+          clay: 0,
+          obsidian: 0,
+          geode: 0,
+        },
+      },
+      0
+    );
+
+    const cache = {};
 
     while (open.size()) {
       const current = open.dequeue();
+      const key = `materials:${Object.values(current.materials).join(
+        ","
+      )}:robots:${Object.values(current.robots).join(",")}`;
 
-      const key = getCloseKey(current);
-      // if (close[key] < score(current, recipe)) {
-      //   continue;
-      // }
-      // close[key] = score(current, recipe);
-      // // console.log(current);
-
-      let hasMoreInPreviousMinutes = false;
-      for (let i = 0; i <= current.minute; i++) {
-        if (maxInMinutes[i] && maxInMinutes[i]["geode"] >= (current.robots["geode"] || 0) &&
-          maxInMinutes[i]["ore"] >= (current.robots["ore"] || 0) &&
-          maxInMinutes[i]["clay"] >= (current.robots["clay"] || 0) &&
-          maxInMinutes[i]["obsidian"] >= (current.robots["obsidian"] || 0)) {
-          hasMoreInPreviousMinutes = true;
-          break;
-        }
-      }
-
-      if (hasMoreInPreviousMinutes) {
+      if (cache[key]) {
         continue;
       }
 
-      // console.log(current);
-      // console.log(maxInMinutes, current.minute, current.materials['geode'] || 0, maxInMinutes[current.minute] || 0)
-      maxInMinutes[current.minute] = {
-        ... current.robots
+      cache[key] = true;
+
+      if (
+        maxGeodesPerMinute[current.minute - 2] &&
+        maxGeodesPerMinute[current.minute - 2] >
+          (current.materials["geode"] || 0)
+      ) {
+        continue;
       }
 
-      if ((current.materials["geode"] || 0) > max) {
-        max = current.materials["geode"] || 0;
-        console.log("max:", max, current, open.size());
+      if (
+        !max ||
+        (current.materials["geode"] || 0) > (max.materials["geode"] || 0)
+      ) {
+        max = current;
+        maxGeodesPerMinute[current.minute] = current.materials["geode"] || 0;
+        console.log(
+          "Blueprint:",
+          h + 1,
+          "geodes:",
+          max.materials["geode"],
+          "minute:",
+          max.minute,
+          "queue size:",
+          open.size()
+        );
       }
 
-      // console.log(key)
-       {
-        const newStates = [];
-        const actions = possibleActions(current, recipe);
+      const actions = possibleActions(current, recipe, minutes);
 
-        for (let action of actions) {
-          if (action.type === "wait") {
-            const newMaterials = {
-              ...current.materials,
-            };
+      for (let action of actions) {
+        if (action.type === "wait") {
+          const newMaterials = {
+            ...current.materials,
+          };
 
+          let mm = current.minute;
+          while (mm < minutes && newMaterials[action.material] < action.until) {
             for (let robot of Object.keys(current.robots)) {
               newMaterials[robot] =
                 (newMaterials[robot] || 0) + current.robots[robot];
             }
-
-            const newState = {
-              ...current,
-              materials: newMaterials,
-              minute: current.minute + 1,
-            };
-
-            newStates.push(newState);
-            // open.enqueue(newState, score(newState, recipe));
-            continue;
+            mm++;
           }
 
-          if (action.type === "build") {
-            const newMaterials = {
-              ...current.materials,
-            };
+          const newState = {
+            ...current,
+            materials: newMaterials,
+            minute: mm,
+          };
 
-            for (let robot of Object.keys(current.robots)) {
-              newMaterials[robot] =
-                (newMaterials[robot] || 0) + current.robots[robot];
-            }
-
-            for (let cost of recipe.find((x) => x.material === action.robot)
-              .cost) {
-              newMaterials[cost.material] -= cost.amount;
-            }
-
-            const newState = {
-              ...current,
-              robots: {
-                ...current.robots,
-                [action.robot]: (current.robots[action.robot] || 0) + 1,
-              },
-              minute: current.minute + 1,
-              materials: newMaterials,
-            };
-
-            newStates.push(newState);
-            // open.enqueue(newState, score(newState, recipe));
-            continue;
-          }
+          open.enqueue(newState, score(newState, recipe));
         }
 
-        actionCache[key] = newStates;
+        if (action.type === "build") {
+          const newMaterials = {
+            ...current.materials,
+          };
 
-        const keys = [];
-        for (let newState of newStates) {
-          const k = getCloseKey(newState);
-          if (!actionCache[k]) {
-            open.enqueue(newState, score(newState, recipe));
-            keys.push(k);
+          for (let robot of Object.keys(current.robots)) {
+            newMaterials[robot] =
+              (newMaterials[robot] || 0) + current.robots[robot];
           }
-        }
 
-        for (let k of keys) {
-          actionCache[k] = true;
+          for (let cost of recipe.find((x) => x.material === action.robot)
+            .cost) {
+            newMaterials[cost.material] -= cost.amount;
+          }
+
+          const newState = {
+            ...current,
+            robots: {
+              ...current.robots,
+              [action.robot]: (current.robots[action.robot] || 0) + 1,
+            },
+            minute: current.minute + 1,
+            materials: newMaterials,
+          };
+
+          open.enqueue(newState, score(newState, recipe));
         }
       }
     }
 
-    values.push(max);
+    values.push(max.materials["geode"]);
   }
 
-  console.log(values);
-  return values.reduce((p, c) => p * c, 1);
-  // return values.reduce((a, b, i) => a + b * (i + 1), 0);
-  // return max * maxIndex;
+  return values;
 }
 
-// function part2() {
-//   for (let i = 0; i < input.length; i++) {
-//     const recipe = input[i];
-//     let geodesAtMinutes = [];
-//     let state = {
-//       minute: 0,
-//       robots: {
-//         ore: 1,
-//       },
-//       materials: {},
-//       actions: [],
-//     };
-
-//     while (true) {
-//       state = findFastestRouteToGeode(state, recipe);
-
-//       if (!state) {
-//         break;
-//       }
-
-//       console.log(state);
-//       if (state.minute > 32) {
-//         break;
-//       }
-
-//       geodesAtMinutes.push({
-//         minute: state.minute,
-//         geodes: state.robots["geode"],
-//       });
-//       state.robots["geode"] = 0;
-//     }
-
-//     console.log(geodesAtMinutes);
-//     console.log(geodesAtMinutes.reduce((a, b) => a + (32 - b.minute), 0));
-//   }
-// }
-
-console.log(`Part1: ${part1()}`);
-// console.log(`Part2: ${part2()}`);
+console.log(
+  `Part1: ${part1(24, input.length).reduce((a, b, i) => a + b * (i + 1), 0)}`
+);
+console.log(
+  `Part2: ${part1(32, Math.min(input.length, 3)).reduce((a, b) => a * b, 1)}`
+);
